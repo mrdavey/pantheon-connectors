@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "pantheon": {
+      "command": "python3",
+      "args": [
+        "${PLUGIN_ROOT}/daemon_server.py"
+      ],
+      "env_vars": [
+        "CODEX_HOME"
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "pantheon-hosted",
+  "interface": {
+    "displayName": "Pantheon"
+  },
+  "plugins": [
+    {
+      "name": "pantheon",
+      "source": {
+        "source": "local",
+        "path": "./pantheon"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "pantheon-project-guard",
+      "source": {
+        "source": "local",
+        "path": "./pantheon/project-guard"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "codex": {
+    "schema": "pantheon.public-source.v1",
+    "repository": "https://github.com/mrdavey/pantheon-connectors.git",
+    "revision": "f576d59a549b5ca9570ec46e0ee6d5078047c03c",
+    "path": "pantheon",
+    "package_sha256": "4f81ffdb21b0e7aca5455edb2dd84e5bfcd750bdf0ee9a8cbd6c879366e0d66f",
+    "package_version": "0.9.24",
+    "source_revision": "8d32c7174b0f999929e005b23fd84b94e8c413d6"
+  }
+}

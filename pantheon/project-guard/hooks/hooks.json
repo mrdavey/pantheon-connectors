@@ -1,0 +1,1 @@
+{"hooks": {"PreToolUse": [{"hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/project_hook.py\"", "timeout": 8}]}], "Stop": [{"hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/project_hook.py\"", "timeout": 12}]}]}}
