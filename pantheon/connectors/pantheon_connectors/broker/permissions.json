@@ -1,0 +1,966 @@
+{
+  "pantheon_ack": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "message_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "connection",
+        "message_ids",
+        "key"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_ack",
+    "operation": "ack",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "completion_protocol": {
+          "enum": [
+            "pantheon.definition.v1"
+          ],
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "message_ids": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "connection",
+        "message_ids",
+        "key",
+        "epoch",
+        "config"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_chat": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_chat",
+    "operation": "chat",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_chat_state": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_chat_state",
+    "operation": "status",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_command": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "context_version": {
+          "type": "integer"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "expected": {
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "objective_version": {
+          "type": "integer"
+        },
+        "op": {
+          "enum": [
+            "ready",
+            "withdraw",
+            "report",
+            "definition",
+            "result",
+            "confirm"
+          ],
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "op",
+        "key"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_command",
+    "operation": "command",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "completion_protocol": {
+          "enum": [
+            "pantheon.definition.v1"
+          ],
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "context_version": {
+          "type": "integer"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "evidence": {
+          "type": "string"
+        },
+        "expected": {
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "objective_version": {
+          "type": "integer"
+        },
+        "op": {
+          "enum": [
+            "ready",
+            "withdraw",
+            "report",
+            "definition",
+            "result",
+            "confirm"
+          ],
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "op",
+        "key",
+        "epoch",
+        "config"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_context": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_context",
+    "operation": "context",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_doctor": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_doctor",
+    "operation": "",
+    "primitive": "connection.doctor.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    }
+  },
+  "pantheon_history": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "cursor": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_history",
+    "operation": "history",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "cursor": {
+          "maxLength": 4096,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_join": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "deliberate": {
+          "type": "boolean"
+        },
+        "link": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Existing agent display name, if known. Omit to generate a friendly harness-prefixed name; do not ask the human for one.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "link",
+        "deliberate"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_join",
+    "operation": "",
+    "primitive": "invitation.join.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "deliberate": {
+          "type": "boolean"
+        },
+        "link": {
+          "type": "string"
+        },
+        "name": {
+          "description": "Existing agent display name, if known. Omit to generate a friendly harness-prefixed name; do not ask the human for one.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "link",
+        "deliberate"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_members": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_members",
+    "operation": "members",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_message": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "id"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_message",
+    "operation": "message",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "id": {
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_post": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "text",
+        "key"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_post",
+    "operation": "post",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "completion_protocol": {
+          "enum": [
+            "pantheon.definition.v1"
+          ],
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "text",
+        "key",
+        "epoch",
+        "config"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_preview": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "link": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "link"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_preview",
+    "operation": "",
+    "primitive": "invitation.preview.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "link": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "link"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_receipts": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "message_id": {
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "message_id"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_receipts",
+    "operation": "receipts",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "message_id": {
+          "maxLength": 128,
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "message_id"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_receive": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "notice_token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_receive",
+    "operation": "",
+    "primitive": "delivery.receive.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "notice_token": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_site_deploy": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "directory": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "directory",
+        "key"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_site_deploy",
+    "operation": "",
+    "primitive": "site.deploy.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "directory": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "directory",
+        "key"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_site_status": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "reconcile": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_site_status",
+    "operation": "site.status",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "reconcile": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_transfer_ack": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id",
+        "path"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_transfer_ack",
+    "operation": "",
+    "primitive": "transfer.ack.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id",
+        "path"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_transfer_fetch": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id",
+        "path"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_transfer_fetch",
+    "operation": "",
+    "primitive": "transfer.fetch.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id",
+        "path"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_transfer_inspect": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_transfer_inspect",
+    "operation": "transfer.inspect",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "transfer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "transfer_id"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_transfer_send": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "local",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "base_revision": {
+          "type": "string"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "path",
+        "recipient",
+        "name",
+        "reason",
+        "key"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_transfer_send",
+    "operation": "",
+    "primitive": "transfer.send.v1",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "base_revision": {
+          "type": "string"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "recipient": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "path",
+        "recipient",
+        "name",
+        "reason",
+        "key"
+      ],
+      "type": "object"
+    }
+  }
+}
