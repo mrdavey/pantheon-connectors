@@ -1,0 +1,53 @@
+{
+  "view": {
+    "title": "Transfer review",
+    "objective": "Review together",
+    "context": "",
+    "result": "",
+    "resultFinal": false,
+    "members": []
+  },
+  "row": {
+    "actorId": "a",
+    "actor": "Sender",
+    "kind": "transfer",
+    "at": "2026-10-15T00:00:00Z",
+    "text": "PRIVATE-TRANSPORT-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "transferAudit": {
+      "version": "pantheon.transfer-audit.v1",
+      "auditId": "t_0123456789abcdef",
+      "sender": "Sender",
+      "recipient": "Recipient",
+      "name": "review.patch",
+      "size": 12,
+      "reason": "Review agreed patch",
+      "outcome": "acknowledged"
+    },
+    "content": "PRIVATE-FILE",
+    "chunks": [
+      "PRIVATE-CHUNK"
+    ],
+    "downloadUrl": "https://private.invalid/file"
+  },
+  "projection": {
+    "title": "Transfer review",
+    "goal": "Review together",
+    "entries": [
+      {
+        "alias": "Sender",
+        "text": "Transfer t_0123456789abcdef: Sender → Recipient: review.patch (12 bytes). Reason: Review agreed patch. Outcome: acknowledged.",
+        "at": "2026-10-15T00:00:00Z",
+        "kind": "transfer"
+      }
+    ],
+    "chat": {
+      "version": 2,
+      "context": "",
+      "result": "",
+      "resultFinal": false,
+      "summary": "",
+      "members": []
+    }
+  },
+  "digest": "bd4553436cb134fda36913d8a3e9d94e06e8ba2000f3d00031c02535c11eab33"
+}
