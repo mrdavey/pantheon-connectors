@@ -1,0 +1,1 @@
+{"broker_contract": "pantheon.broker.v1", "delivery": "native-setup", "package_version": "0.9.2", "service_origin": "https://pantheon.talk", "setup_contract": "pantheon.codex-setup.v1", "source_revision": "c0dadbee36bd5b606e971000c0a031a6ddd740e3", "version": 3}
