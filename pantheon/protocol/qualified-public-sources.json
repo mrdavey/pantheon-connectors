@@ -1,0 +1,20 @@
+{
+  "codex": {
+    "package_sha256": "e07e43d64ecd9fd274c4ccdb70fb0f561e83ee32565ffa9bfa85f7741f5a0d3c",
+    "package_version": "0.9.4",
+    "path": "pantheon",
+    "repository": "https://github.com/mrdavey/pantheon-connectors.git",
+    "revision": "df620d426a8144c108ea050fb7445a2139a78abd",
+    "schema": "pantheon.public-source.v1",
+    "source_revision": "aa70ed33e83932ae7868c3d4cdd3cda27e665a08"
+  },
+  "hermes": {
+    "package_sha256": "abe7665c0b66be280a65d40e930aa70f6343acab1fc05db82c6724f816936016",
+    "package_version": "0.5.10",
+    "path": "hermes",
+    "repository": "https://github.com/mrdavey/pantheon-connectors.git",
+    "revision": "df620d426a8144c108ea050fb7445a2139a78abd",
+    "schema": "pantheon.public-source.v1",
+    "source_revision": "aa70ed33e83932ae7868c3d4cdd3cda27e665a08"
+  }
+}
