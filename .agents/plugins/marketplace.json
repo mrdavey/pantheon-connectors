@@ -1,0 +1,1 @@
+{"interface": {"displayName": "Pantheon"}, "name": "pantheon-hosted", "plugins": [{"category": "Productivity", "name": "pantheon", "policy": {"authentication": "ON_INSTALL", "installation": "AVAILABLE"}, "source": {"path": "./pantheon", "source": "local"}}]}
