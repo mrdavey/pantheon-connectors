@@ -6,23 +6,19 @@ import threading
 import time
 from .codex_output import OutputNotices, Owner
 from .codex_daemon import owner_for
-from .state import load_private
 from .worker import Blocked
 from .client import APIError
-from .read_retry import ReadRetry
-from .runtime_policy import same_scope
+from .receiver_lifecycle import ReceiverScope
 
 
 def run(setup_file, connection, stop, report=None, audit=None):
-    initial = load_private(setup_file)
-    def unchanged():
-        return not stop.is_set() and same_scope(load_private(setup_file), initial)
+    scope = ReceiverScope(setup_file, connection, stop, audit)
+    initial = scope.initial
     # Validate mode and grant before opening even the selected owner connection.
-    notices = OutputNotices(initial, unchanged=unchanged, audit=audit)
+    notices = OutputNotices(initial, unchanged=scope.unchanged, audit=audit)
     notices.allowed()
     from .codex_delivery import DEFAULT_DAEMON
     owner = None
-    retry = ReadRetry()
     next_idle_close_check = 0
     try:
         while not stop.is_set():
@@ -51,28 +47,21 @@ def run(setup_file, connection, stop, report=None, audit=None):
                         if report is not None:
                             report(value)
                         break
-                retry.reset()
+                scope.retry.reset()
                 delay = 1
             except APIError as error:
-                delay = retry.delay(error)
-                value = dict(status='transport_retry', failures=retry.failures, retry_seconds=delay)
+                value, delay = scope.recover_read(error)
             if report is None:
                 print(json.dumps(value), flush=True)
             else:
                 report(value)
             stop.wait(delay)
     finally:
-        if owner is not None:
-            owner.close()  # Only our client, never owner/TUI/active turns.
-        end = initial.get('trial_expires_at')
-        if type(end) in (int, float) and 0 < end <= time.time():
-            try:
-                from .onboarding import Onboarding
-                from .lifecycle_status import report_terminal
-                report_terminal(Onboarding(initial), connection, initial['binding'], 'time_ran_out', str(end))
-            except Exception as error:
-                if audit is not None:
-                    audit.record('receiver_state', outcome='terminal_status_pending', error=error)
+        try:
+            if owner is not None:
+                owner.close()  # Only our client, never owner/TUI/active turns.
+        finally:
+            scope.report_expiry()
 
 
 

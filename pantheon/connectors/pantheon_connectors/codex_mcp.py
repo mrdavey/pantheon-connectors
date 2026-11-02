@@ -12,7 +12,7 @@ import time
 from .codex_audit import Audit, failure
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
-from .codex_delivery import DEFAULT_DAEMON, preparation, selected
+from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, preparation, selected
 from .codex_setup import prepare
 from .codex_output_watch import run
 from .native_cli import execute, binding_for
@@ -26,7 +26,8 @@ PREPARE = dict(name='pantheon_prepare', description=(
     'No invitation redemption, runtime grant or model turn.'), inputSchema=dict(type='object',
     properties={'url': {'type': 'string'}, 'inspect_default_daemon': {'type': 'boolean'}},
     required=['url', 'inspect_default_daemon'], additionalProperties=False))
-WAKE_TOOLS = [dict(name=name, description='Use only connection/wake_id from actual native tool-output arrival.',
+WAKE_TOOLS = [dict(name=name, description='Use only connection/wake_id from the actual Pantheon native notice (tool output or an explicitly approved labelled desktop queue notice).' +
+    (' After processing input and finishing this wake, end the native turn if waiting for a peer. Do not sleep or poll; the next incoming notice starts another turn.' if name == 'pantheon_finish_wake' else ''),
     inputSchema=dict(type='object', properties={key: {'type': 'string'} for key in ('connection', 'wake_id')},
     required=['connection', 'wake_id'], additionalProperties=False)) for name in ('pantheon_begin_wake', 'pantheon_finish_wake')]
 
@@ -60,7 +61,10 @@ class Server:
                     self.audit.emit('receiver_status', connection=connection, **{k:v for k,v in value.items() if k in ('status','wake_id','turn_id')})
             def work():
                 try:
-                    run(self.setup_file, connection, stop, report=report, audit=self.audit)
+                    receiver = run
+                    if selected(load_private(self.setup_file)) == GUI_QUEUE:
+                        from .codex_watch import run as receiver
+                    receiver(self.setup_file, connection, stop, report=report, audit=self.audit)
                     with self.lock:
                         self.status[connection] = dict(status='stopped')
                     self.audit.emit('receiver_stopped', connection=connection, status='stopped')
@@ -118,8 +122,8 @@ class Server:
             raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
         name, args = params.get('name'), params.get('arguments', {})
-        preparation(DEFAULT_DAEMON, self.setup_file)
         if name == 'pantheon_prepare':
+            preparation(DEFAULT_DAEMON, self.setup_file)
             if (not isinstance(args, dict) or set(args) != {'url', 'inspect_default_daemon'}
                     or type(args['url']) is not str or args['inspect_default_daemon'] is not True):
                 raise Blocked('Explicit daemon inspection consent is required')
@@ -127,7 +131,8 @@ class Server:
                             native_thread=thread, inspect_default_daemon=True)
         else:
             config = load_private(self.setup_file)
-            if selected(config) != DEFAULT_DAEMON:
+            mode = selected(config)
+            if mode not in (DEFAULT_DAEMON, GUI_QUEUE) or (mode == GUI_QUEUE and config.get('hosted_consent') is not True):
                 raise Blocked('Plugin refuses another delivery mode')
             binding_for(config, thread)
             value = execute(config, name, args, native_thread=thread, setup_file=self.setup_file)
@@ -141,7 +146,11 @@ class Server:
                 with self.lock:
                     value['receivers'] = dict(self.status)
                 value['audit'] = dict(path=str(self.audit.path), format='jsonl', retention='current plus one rotated file, 1 MiB each; local only')
-                value['daemon_access_scope'] = 'Local daemon API is broader than this approved thread; plugin enforces its binding and lifetime.'
+                value['delivery'] = mode
+                if mode == DEFAULT_DAEMON:
+                    value['daemon_access_scope'] = 'Local daemon API is broader than this approved thread; plugin enforces its binding and lifetime.'
+                else:
+                    value['queue_scope'] = 'Labelled automated user-message notices in this exact conversation. Accepted entries cannot be cancelled by Pantheon.'
         return dict(content=[dict(type='text', text=json.dumps(value))], structuredContent=value)
 
     def close(self):

@@ -12,7 +12,7 @@ import uuid
 from .onboarding import origin, private_directory, private_lock
 from .state import save_private
 from .worker import Blocked
-from .codex_delivery import ACTIVE_WAIT, DEFAULT_DAEMON, MODES, preparation, descriptor
+from .codex_delivery import ACTIVE_WAIT, DEFAULT_DAEMON, GUI_QUEUE, MODES, preparation, descriptor
 
 
 def cli_compatibility():
@@ -31,10 +31,10 @@ def prepare(setup_file, url, profile, *, delivery=None, owner_socket=None, nativ
     if notification_policy is not None:
         notification_policy = validate(notification_policy, 8)
     delivery = preparation(delivery, setup_file)
-    if notification_policy is None and delivery in (DEFAULT_DAEMON, "app-server-tool-output"):
+    if notification_policy is None and delivery in (DEFAULT_DAEMON, GUI_QUEUE, "app-server-tool-output"):
         notification_policy = {"mode":"unlimited"}
-    if notification_policy is not None and delivery not in (DEFAULT_DAEMON, "app-server-tool-output"):
-        raise Blocked("Explicit notification policy requires tool-output delivery")
+    if notification_policy is not None and delivery not in (DEFAULT_DAEMON, GUI_QUEUE, "app-server-tool-output"):
+        raise Blocked("Explicit notification policy requires tool-output or desktop queue delivery")
     if bool(owner_socket) != (delivery == "app-server-tool-output"):
         raise Blocked("Only shared-owner delivery accepts and requires an explicit owner socket")
     metadata = descriptor()
@@ -57,9 +57,16 @@ def prepare(setup_file, url, profile, *, delivery=None, owner_socket=None, nativ
                       codex_executable=str(pathlib.Path(executable).absolute()),
                       codex_home=str(pathlib.Path(os.environ.get('CODEX_HOME', '~/.codex')).expanduser().resolve()),
                       delivery=delivery,
-                      binding=dict(runtime='codex', surface='native-queue' if delivery == ACTIVE_WAIT else ('app-server-tool-output' if delivery == DEFAULT_DAEMON else delivery), profile=profile, session=identity,
+                      binding=dict(runtime='codex', surface='native-queue' if delivery in (ACTIVE_WAIT, GUI_QUEUE) else ('app-server-tool-output' if delivery == DEFAULT_DAEMON else delivery), profile=profile, session=identity,
                                    version=cli_version),
                       allow_runtime_turns=False, allow_ui_fallback=False, allow_active_wait=False, trial_expires_at=0, max_notices=0 if delivery == ACTIVE_WAIT else 2)
+        if delivery == GUI_QUEUE:
+            from .codex_queue import QueueCLI
+            config.update(allow_tool_output=False, allow_daemon_access=False,
+                          reviewed_provider={'scope': 'existing-desktop-conversation', 'identity_verified': False},
+                          reviewed_account=None)
+            if not QueueCLI(config).available():
+                raise Blocked('Install a supported Codex CLI queue helper on the native PATH; no alternate delivery selected')
         if delivery == 'app-server-tool-output':
             from .codex_output import Owner, socket_identity
             selected_socket = pathlib.Path(owner_socket).expanduser()

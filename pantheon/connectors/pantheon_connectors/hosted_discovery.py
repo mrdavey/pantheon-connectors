@@ -75,14 +75,14 @@ def validate_discovery(value, trusted_origin, runtime, *, now=None):
     return value
 
 
-def matches_native_host(package, binding):
+def matches_native_host(package, binding, *, surfaces=None):
     """Compatibility is local policy, never an operator-selectable mechanism."""
     runtime = package.get("runtime")
     return (runtime in _NATIVE_SURFACES and binding.get("runtime") == runtime
             and (package['host'].get('runtime_version') == binding.get('version')
                  or (runtime == 'codex' and package['host'].get('compatibility') == 'native-capabilities'
                      and isinstance(binding.get('version'), str) and 0 < len(binding['version']) <= 128))
-            and binding.get("surface") == _NATIVE_SURFACES[runtime])
+            and binding.get("surface") in (surfaces if surfaces is not None else [_NATIVE_SURFACES[runtime]]))
 
 
 def fetch_discovery(trusted_origin, runtime, *, client_factory=Client):

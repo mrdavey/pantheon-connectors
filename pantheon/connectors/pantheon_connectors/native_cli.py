@@ -11,7 +11,7 @@ from .codex import AttachedAppServer, CodexAdapter
 from .onboarding import Onboarding, dispatch, validate_arguments
 from .state import load_private, save_private
 from .worker import Blocked
-from .codex_delivery import ACTIVE_WAIT, DEFAULT_DAEMON, selected, require_queue, preparation
+from .codex_delivery import ACTIVE_WAIT, DEFAULT_DAEMON, GUI_QUEUE, selected, require_queue, preparation
 
 
 def fence_hosted_runtime(setup_file, config, connection):
@@ -100,7 +100,9 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         from .codex_queue import Notices
         if not isinstance(args, dict) or set(args) != {'connection', 'wake_id'} or any(type(v) is not str for v in args.values()):
             raise Blocked('Expected connection and wake_id from the Pantheon notice')
-        return Notices(config).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake')
+        if name == 'pantheon_finish_wake' and selected(config) == GUI_QUEUE and not allowance():
+            return Notices(config).fenced_wake_status(args['connection'], args['wake_id'], scope_check=current_scope)
+        return Notices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake')
     if name == 'pantheon_pair_panel' and binding['surface'] == 'native-queue':
         require_queue(config)
         from .codex_queue import Notices
@@ -117,13 +119,13 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             raise Blocked('Runtime authorization ended during native preflight')
     def doctor():
         current = current_scope()
-        if selected(current) == DEFAULT_DAEMON and (
+        if (selected(current) == GUI_QUEUE and not trial_allowed(current)) or (selected(current) == DEFAULT_DAEMON and (
                 not trial_allowed(current) or current.get('allow_daemon_access') is not True
-                or current.get('allow_tool_output') is not True):
+                or current.get('allow_tool_output') is not True)):
             return dict(status='local_runtime_inactive', runtime_authorized=False,
                         daemon_inspected=False, runtime_verified=False,
                         next_action='stop_inactive_grant' if current.get('hosted_runtime_grant') else 'review_missing_consent',
-                        notice='Local state only: daemon access is inactive. No network or daemon inspection was performed; no delivery, receipt or remote withdrawal is inferred. Preserve the existing grant; do not renew it for diagnostics.')
+                        notice='Local state only: runtime access is inactive. No network or native inspection was performed; no delivery, receipt or remote withdrawal is inferred. Preserve the existing grant; do not renew it for diagnostics.')
         check(binding)
         if selected(config) == ACTIVE_WAIT:
             return dict(status="active_wait_binding_checked", released=False,
@@ -132,6 +134,9 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         if selected(config) == DEFAULT_DAEMON:
             return dict(status="default_daemon_preflight_passed", released=False, runtime_verified=False,
                         notice="No turn requested. After scoped join the plugin manages its bounded receiver.")
+        if selected(config) == GUI_QUEUE:
+            return dict(status='queue_preflight_passed', runtime_verified=False,
+                        notice='No turn requested. The plugin manages the receiver after scoped join. Queue acceptance alone is not an agent receipt or ACK.')
         return {"status": "queue_preflight_passed" if binding['surface'] == 'native-queue' else "shared_owner_preflight_passed", "released": False,
                 "notice": "No turn requested. The owner must approve the bounded trial and start its receiver."}
     service = Onboarding(config)
@@ -156,11 +161,14 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             value = OutputNotices(config).withdraw(args['connection'], lambda: dispatch(service, name, args, binding, check, doctor))
             value['wake_cleanup']['private_runtime_disabled'] = fenced
             return value
-        return Notices(config).withdraw(args['connection'], lambda: dispatch(service, name, args, binding, check, doctor))
+        fenced = fence_hosted_runtime(setup_file, config, args['connection'])
+        value = Notices(config).withdraw(args['connection'], lambda: dispatch(service, name, args, binding, check, doctor))
+        value['wake_cleanup']['private_runtime_disabled'] = fenced
+        return value
     value = dispatch(service, name, args, binding, check, doctor)
     if name == "pantheon_join" and value.get("connection"):
         value["receiver_binding_file"] = str(pathlib.Path(config["state_dir"]) / (value["connection"] + ".json"))
-        if selected(config) == DEFAULT_DAEMON:
+        if selected(config) in (DEFAULT_DAEMON, GUI_QUEUE):
             value['next'] += ' The plugin owns the bounded receiver; no separate user launch is required.'
         elif binding['surface'] == 'app-server-tool-output':
             value['next'] += " Start codex_output_watch with the ORIGINAL setup file and this connection only after explicit shared-owner consent."

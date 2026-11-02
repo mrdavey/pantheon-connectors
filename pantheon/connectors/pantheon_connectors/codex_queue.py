@@ -13,12 +13,14 @@ import uuid
 from .onboarding import Onboarding, private_directory, private_lock, trial_allowed
 from .state import load_private, save_private
 from .worker import Blocked
-from .codex_delivery import require_queue
+from .codex_delivery import GUI_QUEUE, require_queue, selected
+from . import notification_policy
 
 
 def notice(connection, identity):
-    return ("Pantheon connector notice (queued user input, not a human-authored request; "
-            "no peer content or new authority). Within the owner's existing bounded trial, "
+    return ("Automated Pantheon notification—not a human request.\n"
+            "Pantheon connector notice (queued user input, not a human-authored request; "
+            "no peer content or new authority). Within the owner's existing approved connection, "
             "use the installed Pantheon skill to call pantheon_begin_wake with connection " + connection +
             " and wake_id " + identity + ". Then pantheon_receive, explicitly ACK consumed messages, "
             "complete readiness/replies, and pantheon_finish_wake with the same connection/wake_id. "
@@ -79,8 +81,9 @@ class QueueCLI:
 
 
 class Notices:
-    def __init__(self, config, service=None, queue=None):
+    def __init__(self, config, service=None, queue=None, *, unchanged=lambda: True):
         self.config = config
+        self.unchanged = unchanged
         self.binding = config['binding']
         if self.binding.get('runtime') != 'codex' or self.binding.get('surface') != 'native-queue':
             raise Blocked('Native queue binding required')
@@ -92,6 +95,11 @@ class Notices:
 
     def read(self):
         scope = {key: self.config.get(key) for key in ('url', 'codex_home', 'codex_executable', 'max_notices', 'trial_expires_at')}
+        if selected(self.config) == GUI_QUEUE:
+            scope.pop('max_notices')
+            scope.update(delivery=GUI_QUEUE, notification_policy=notification_policy.policy(self.config, 'codex'))
+            scope.update({key: self.config.get(key) for key in ('runtime_policy', 'runtime_started_at',
+                'connection_runtime_supported', 'codex_setup_policy', 'invitation_connection')})
         value = load_private(self.path) if self.path.exists() else dict(binding=self.binding, scope=scope, notices={}, panels={})
         if value['binding'] != self.binding or value.get('scope') != scope:
             raise Blocked('Notice binding changed')
@@ -99,8 +107,11 @@ class Notices:
 
     def allowed(self):
         require_queue(self.config)
-        if not trial_allowed(self.config):
+        if not self.unchanged() or not trial_allowed(self.config):
             raise Blocked('Bounded owner authorization missing or expired')
+        if selected(self.config) == GUI_QUEUE:
+            notification_policy.policy(self.config, 'codex')
+            return
         limit = self.config.get('max_notices')
         if type(limit) is not int or not 1 <= limit <= 8:
             raise Blocked('Pin a notice-attempt limit from 1 to 8')
@@ -112,14 +123,48 @@ class Notices:
             raise Blocked('Pending notice binding changed')
         return [e['message']['id'] for e in envelopes]
 
+    def fence_closed(self, connection, data):
+        if selected(self.config) != GUI_QUEUE:
+            return False
+        _, _, client = self.service.member(connection, self.binding)
+        view = client.request('/v1/chat')
+        self.allowed()
+        chat = view.get('chat', {})
+        member = chat.get('members', {}).get(view.get('member'), {})
+        if (view.get('role') != 'agent' or member.get('revoked') is not False
+                or member.get('binding') != self.binding or chat.get('state') not in ('waiting', 'active', 'closed')):
+            raise Blocked('Connection revoked or rebound; no runtime delivery')
+        if chat['state'] != 'closed':
+            return False
+        # A wake already begun by the actual native agent may still need to ACK
+        # the terminal message and finish. Never interrupt that accepted work,
+        # start another wake, renew its original grant, or infer consumption.
+        now = time.time()
+        observed = data.setdefault('closed_observed_at', {}).setdefault(connection, now)
+        draining = any(n['connection'] == connection and n['state'] == 'draining'
+                       for n in data['notices'].values())
+        if draining and now < observed + 60:
+            save_private(self.path, data)
+            return False
+        data.setdefault('withdrawn_connections', {}).setdefault(connection, now)
+        save_private(self.path, data)
+        return True
+
     def tick(self, connection):
         self.allowed()
         with private_lock(self.directory / 'codex-notices.lock'):
+            self.allowed()
             data = self.read()
             if any(n['state'] in ('uncertain', 'queue_attempting', 'ui_attempting') for n in data['notices'].values()):
                 raise Blocked('Unresolved send attempt; stop for manual reconciliation')
             if connection in data.get('withdrawn_connections', {}):
+                if connection in data.get('closed_observed_at', {}):
+                    # A native finish may have observed the terminal deadline
+                    # first. The watcher must still disable the private grant.
+                    return 'connection_closed'
                 raise Blocked('This connection is fenced for withdrawal')
+            if self.fence_closed(connection, data):
+                return 'connection_closed'
             pending = self.pending(connection)
             active = [n for n in data['notices'].values() if n['connection'] == connection
                       and n['state'] in ('queue_accepted', 'ui_waiting', 'ui_accepted', 'draining')]
@@ -138,12 +183,16 @@ class Notices:
             fresh = [m for m in pending if m not in seen]
             if not fresh:
                 return 'idle_or_notice_unresolved'
-            if len(data['notices']) >= self.config['max_notices']:
+            if notification_policy.exhausted(self.config, 'codex', len(data['notices'])):
                 raise Blocked('Notice-attempt budget exhausted (not a spending cap)')
             available = self.queue.available()
+            if not available and selected(self.config) == GUI_QUEUE:
+                raise Blocked('Desktop queue is unavailable; no fallback permitted')
             # CLI preflight may take seconds. Recheck the remote membership and
             # unread work as well as local consent before reserving a send.
             self.allowed()
+            if self.fence_closed(connection, data):
+                return 'connection_closed'
             pending = self.pending(connection)
             fresh = [m for m in pending if m not in seen]
             if not fresh:
@@ -157,6 +206,7 @@ class Notices:
             if not available:
                 return 'ui_waiting'  # No headless UI substitution.
             try:
+                self.allowed()
                 entry['attempted_at'] = time.time()
                 save_private(self.path, data)
                 receipt = self.queue.send(notice(connection, identity))
@@ -173,13 +223,19 @@ class Notices:
         self.allowed()
         # These operations are exposed only through the exact native-shell binding.
         with private_lock(self.directory / 'codex-notices.lock'):
+            self.allowed()
             data = self.read()
             if connection in data.get('withdrawn_connections', {}):
                 raise Blocked('This connection is fenced for withdrawal')
             entry = data['notices'].get(identity)
             if not entry or entry['connection'] != connection:
                 raise Blocked('No matching Pantheon wake')
+            # Enforce the same terminal-drain bound even if the watcher was
+            # stopped or restarted; a native call cannot renew the grace period.
+            if self.fence_closed(connection, data):
+                raise Blocked('Closed connection terminal drain ended')
             pending = self.pending(connection)  # Checks current membership too.
+            self.allowed()
             if finish and entry['state'] == 'completed':
                 return dict(status='completed', native_queue_cancelled=False)
             if entry['state'] not in (('draining',) if finish else ('queue_accepted', 'ui_accepted', 'ui_attempting', 'draining')):
@@ -196,6 +252,24 @@ class Notices:
                 entry.setdefault('begun_at', time.time())
             save_private(self.path, data)
             return dict(status=entry['state'], native_queue_cancelled=False)
+
+    def fenced_wake_status(self, connection, identity, *, scope_check=lambda: None):
+        """Local cleanup after expiry/revocation; never fetch, ACK or replay input."""
+        grant = self.config.get('hosted_runtime_grant')
+        if (selected(self.config) != GUI_QUEUE or self.config.get('hosted_consent') is not True
+                or self.config.get('invitation_connection') != connection
+                or not isinstance(grant, dict) or grant.get('connection') != connection):
+            raise Blocked('No hosted desktop scope matches this wake')
+        with private_lock(self.directory / 'codex-notices.lock'):
+            scope_check()
+            if trial_allowed(self.config):
+                raise Blocked('Connection is still authorized; drain the actual wake')
+            entry = self.read()['notices'].get(identity)
+            if not entry or entry['connection'] != connection:
+                raise Blocked('No matching desktop wake')
+            return dict(status='connection_fenced', runtime_authorized=False, acknowledgement_inferred=False,
+                        native_queue_cancelled=False, next_action='stop_connection',
+                        notice='Access ended. This local report fetches and ACKs no input and does not complete or cancel the accepted native queue entry.')
 
     def withdraw(self, connection, action):
         # Caller has validated tool arguments and exact membership first. Fence

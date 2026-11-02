@@ -53,18 +53,37 @@ def validate(value, origin, runtime, *, now=None):
                 or not isinstance(policy['revoked_versions'], list) or len(policy['revoked_versions']) > 100
                 or any(not isinstance(v, str) for v in policy['revoked_versions'])
                 or len(set(policy['revoked_versions'])) != len(policy['revoked_versions'])
-                or policy['host_modes'] != ['app-server-tool-output' if name == 'codex' else 'native-adapter']):
+                or not valid_host_modes(name, policy, value['packages'][name])):
             raise Blocked('Invalid v3 connector compatibility policy')
         validate_discovery({**value, 'schema': V2}, origin, name, now=now)
         for revoked in policy['revoked_versions']:
             version(revoked)
         if not compatible(policy, value['packages'][name]['version']):
             raise Blocked('Current package is excluded by its compatibility policy')
+    if ('native-queue' in value['compatibility'].get('codex', {}).get('host_modes', [])
+            and 'hermes' in value['compatibility']
+            and version(value['compatibility']['hermes']['minimum_version']) < (0, 5, 6)):
+        raise Blocked('Desktop discovery requires Hermes 0.5.6+ to read the shared host policy')
     if (all(version(p['version']) >= ((0, 7, 0) if name == 'codex' else (0, 5, 0))
             for name, p in value['packages'].items())
             and not re.fullmatch(re.escape(origin + '/v1/onboarding/v3/guide/') + '[a-f0-9]{64}', value['guide_url'])):
         raise Blocked('Fresh onboarding requires a content-addressed guide')
     return value
+
+
+def valid_host_modes(runtime, policy, package):
+    if policy.get('host_modes') == ['app-server-tool-output' if runtime == 'codex' else 'native-adapter']:
+        return True
+    return (runtime == 'codex' and policy.get('host_modes') == ['app-server-tool-output', 'native-queue']
+            and version(policy['minimum_version']) >= (0, 9, 0)
+            and version(package['version']) >= (0, 9, 0)
+            and package['host'].get('compatibility') == 'native-capabilities')
+
+
+def matches_host(discovery, binding):
+    runtime = binding['runtime']
+    return matches_native_host(discovery['packages'][runtime], binding,
+                               surfaces=discovery['compatibility'][runtime]['host_modes'])
 
 
 def check_installed(value, runtime, installed):
@@ -99,7 +118,7 @@ def admission(config, binding, *, client_factory=Client):
     fresh = fetch(origin, runtime, client_factory=client_factory)
     check_installed(fresh, runtime, config.get('installed_connector'))
     if (saved['broker_contract'] != fresh['broker_contract']
-            or not matches_native_host(fresh['packages'][runtime], binding)):
+            or not matches_host(fresh, binding)):
         raise Blocked('Current host is outside the reviewed broker contract')
     return fresh
 
@@ -122,7 +141,7 @@ def installed_hermes():
 def prepare_config(config, discovery, installed, binding):
     validate(discovery, config['url'], binding['runtime'])
     check_installed(discovery, binding['runtime'], installed)
-    if not matches_native_host(discovery['packages'][binding['runtime']], binding):
+    if not matches_host(discovery, binding):
         raise Blocked('Native host is outside the broker compatibility policy')
     updated = copy.deepcopy(config)
     updated.update(hosted_onboarding=discovery, installed_connector=installed, mcp={'contract': CONTRACT})

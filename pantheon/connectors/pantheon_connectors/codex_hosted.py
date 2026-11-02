@@ -10,7 +10,7 @@ import time
 from .codex_audit import Audit
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
-from .codex_delivery import DEFAULT_DAEMON, descriptor
+from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, NATIVE_SETUP, descriptor, selected
 from .codex_mcp import Server, WAKE_TOOLS
 from .codex_setup import prepare, cli_compatibility
 from .codex_compatibility import require_capabilities
@@ -44,6 +44,12 @@ AUTHORIZE = dict(
 def unavailable_review(*_):
     raise Blocked('Native setup form is unavailable; no approval was recorded')
 
+
+def runtime_active(config):
+    mode = selected(config)
+    return runtime_policy.allowed(config) and (mode == GUI_QUEUE or
+        (config.get('allow_daemon_access') is True and config.get('allow_tool_output') is True))
+
 class HostedServer:
     def __init__(self, root=None):
         self.root = Path(root) if root else Path(os.environ.get('CODEX_HOME', '~/.codex')).expanduser() / 'pantheon' / 'hosted'
@@ -51,6 +57,14 @@ class HostedServer:
         self.lock = threading.RLock()
         self.catalogue = None
         self.setup_policy = codex_setup_policy.Policy(self.root.parent / 'setup-policy.json')
+        # Native tool approval settings are loaded with the host conversation.
+        # Saving preferences cannot refresh an already-running host. Fence this
+        # process until normal native reload starts a server with that policy.
+        try:
+            loaded = self.setup_policy.read()
+            self.loaded_setup_id = loaded['id'] if self.setup_policy.active(loaded) else None
+        except (Blocked, OSError, ValueError, KeyError, TypeError):
+            self.loaded_setup_id = None  # Keep status/revoke diagnostics available.
         self.elicit = unavailable_review
         metadata = descriptor()
         self.version = metadata.get('package_version', CODEX_VERSION) if metadata else CODEX_VERSION
@@ -87,12 +101,7 @@ class HostedServer:
                 self.catalogue.refresh()
             tools=[{**tool,'inputSchema':dict(type='object',properties={'connection':{'type':'string'}},required=['connection'],additionalProperties=False)} if tool['name']=='pantheon_doctor' else tool for tool in (self.catalogue.tools() if self.catalogue else TOOLS)]
             setup = [codex_setup_policy.TOOL] if self.setup_enabled else [PREPARE, AUTHORIZE]
-            connector = {**connect.TOOL, 'description': (
-                'Connect the exact invitation deliberately supplied by the human. First use opens one native setup form; '
-                'later invitations reuse approved profile preferences with fresh chat grants. Do not ask an extra textual '
-                'consent question or manufacture form answers. Optional consent only preserves a narrower already-approved '
-                'finite window. Retries never renew inactive grants. Read and explicitly ACK actual input after connecting.'
-            )} if self.setup_enabled else connect.TOOL
+            connector = codex_setup_policy.CONNECT_TOOL if self.setup_enabled else connect.TOOL
             return {'tools':[connector]+setup+tools+WAKE_TOOLS}
         if method != 'tools/call': raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
@@ -102,13 +111,17 @@ class HostedServer:
         if not metadata or metadata.get('version')!=3 or metadata.get('service_origin')!=TRUSTED_ORIGIN: raise Blocked('Portable package trust configuration is missing')
         if self.setup_enabled:
             if name == 'pantheon_setup':
-                if set(args) != {'action'} or args['action'] not in ('status', 'review', 'revoke', 'change'):
+                if ('action' not in args or set(args) - {'action', 'expires_at'}
+                        or args['action'] not in ('status', 'review', 'revoke', 'change')
+                        or ('expires_at' in args and args['action'] not in ('review', 'change'))):
                     raise Blocked('Use setup status, review, change or revoke; model approval arguments are not accepted')
+                if 'expires_at' in args:
+                    codex_setup_policy.validate_deadline(args['expires_at'])
                 if args['action'] == 'status':
-                    return self.result(self.setup_policy.status(thread))
+                    return self.result(self.setup_status(thread))
                 if args['action'] == 'revoke':
                     return self.result(self.setup_policy.revoke())
-                return self.result(self.review_setup(thread, change=args['action'] == 'change'))
+                return self.result(self.review_setup(thread, change=args['action'] == 'change', expires_at=args.get('expires_at')))
             if name in ('pantheon_prepare', 'pantheon_authorize') and not _setup_connect:
                 raise Blocked('Use pantheon_connect; this package derives fresh grants only from native setup review')
         if 'link' in args:
@@ -122,7 +135,7 @@ class HostedServer:
             return self.result(Onboarding({'url':TRUSTED_ORIGIN}).preview(args['link']))
         with self.lock:
             if name == 'pantheon_connect':
-                connect.validate(args)
+                (codex_setup_policy.validate_connect if self.setup_enabled else connect.validate)(args)
                 for directory in [self.root.parent, self.root, path.parent.parent, path.parent]:
                     private_directory(directory.absolute())
                 def inspect():
@@ -134,7 +147,7 @@ class HostedServer:
                     grant = config.get('hosted_runtime_grant')
                     return dict(previous=grant is not None,
                         connection=connection,
-                        active=bool(grant and runtime_policy.allowed(config) and config.get('allow_daemon_access') is True and config.get('allow_tool_output') is True),
+                        active=bool(grant and runtime_active(config)),
                         lifetime=({'runtime_policy': grant['runtime_policy']} if grant and 'runtime_policy' in grant else {'expires_at': grant['expires_at']} if grant else None),
                         provider={'provider': config.get('reviewed_provider'), 'account': config.get('reviewed_account')})
                 def call(tool, values):
@@ -145,11 +158,16 @@ class HostedServer:
                     if prior.get('previous') and not prior.get('active'):
                         return self.result(dict(status='runtime_inactive', next_action='stop_inactive_grant'))
                     if not self.setup_policy.recall(thread):
-                        reviewed = self.review_setup(thread)
+                        reviewed = self.review_setup(thread, expires_at=args.get('expires_at'))
                         if reviewed['status'] != 'setup_active':
                             return self.result(reviewed)
                 lock = self.setup_policy.path.with_suffix('.lock') if self.setup_enabled else path.parent.parent / 'connect.lock'
                 with private_lock(lock):
+                    if self.setup_enabled:
+                        status = self.setup_status(thread)
+                        if status['status'] != 'setup_active':
+                            return self.result(status)
+                        args = self.setup_policy.connect_arguments(thread, args)
                     value = connect.run(args, inspect=inspect,
                         recall=(lambda: self.setup_policy.recall(thread)) if self.setup_enabled else review.recall,
                         remember=(lambda *_: None) if self.setup_enabled else review.remember,
@@ -157,6 +175,7 @@ class HostedServer:
                         prepare=lambda approved: call('pantheon_prepare', dict(link=args['link'], deliberate=True, inspect_default_daemon=approved)),
                         authorize=lambda consent: call('pantheon_authorize', dict(connection=connection, deliberate=True,
                             **{k: consent[k] for k in ('runtime_policy', 'expires_at') if k in consent})),
+                        receive=lambda handle: call('pantheon_receive', {'connection': handle}),
                         join=lambda: call('pantheon_join', dict(link=args['link'], deliberate=True,
                             **({'name': args['name']} if 'name' in args else {}))))
                 return self.result(value)
@@ -203,27 +222,32 @@ class HostedServer:
                                 cli_version=version,offline_capabilities_verified=True,native_owner_verified=False,runtime_authorized=False,
                                 runtime_options=['connection','finite'],next_action='review_missing_consent',
                                 next='Preview the room without daemon access. Obtain only missing scoped consent: inspect and access this conversation through the broader local daemon API, then join and autonomously fetch/ACK/reply using its existing model/provider until disconnect or room closure/expiry (or an explicitly requested finite window). If inspection reveals a different scope, stop and review only that difference. Paste-link intent alone is not this consent.'))
-                        value=prepare(path,TRUSTED_ORIGIN,'default',delivery=DEFAULT_DAEMON,native_thread=thread,inspect_default_daemon=True)
+                        mode = self.setup_policy.read().get('delivery', DEFAULT_DAEMON) if self.setup_enabled else DEFAULT_DAEMON
+                        value=prepare(path,TRUSTED_ORIGIN,'default',delivery=mode,native_thread=thread,inspect_default_daemon=mode == DEFAULT_DAEMON)
                         config=load_private(path);config.update(hosted_onboarding=discovery,hosted_consent=True,invitation_connection=connection,connection_runtime_supported=True)
                         if broker:
                             config = hosted_v3.prepare_config(config, discovery, installed, config['binding'])
                         validate_hosted_admission(config,config['binding']);save_private(path,config)
                     value.pop('setup_file',None)
                     existing_grant = config.get('hosted_runtime_grant') is not None
-                    authorized = (runtime_policy.allowed(config) and config.get('allow_daemon_access') is True
-                                  and config.get('allow_tool_output') is True)
+                    authorized = runtime_active(config)
                     value.update(connection=connection,
                         reviewed_provider=config.get('reviewed_provider'),
                         account_scope=dict(login_metadata_pinned='reviewed_account' in config,exact_account_verified=False,
                             limitation='The native API does not identify every provider account/workspace. Exact-account automatic delivery remains unqualified.'),
                         runtime_authorized=authorized,
                         runtime_enabled=authorized,
-                        native_owner_verified=False if value['status']=='existing_setup_preserved' else True,
+                        native_owner_verified=value['status'] != 'existing_setup_preserved' and selected(config) == DEFAULT_DAEMON,
                         next_action=('join_with_existing_checks' if authorized else 'stop_inactive_grant') if existing_grant else 'authorize_with_settled_consent',
                         runtime_options=[] if existing_grant else (['connection','finite'] if config.get('connection_runtime_supported') is True else ['finite']),
                         next=(('Reuse the existing approval without another confirmation; join/recovery must still verify the pinned owner, provider and membership. No new daemon inspection was performed.' if authorized else
                                'Existing approval is inactive; stop. Do not renew, reactivate or ask to repeat the same approval. Report the expiry/disabled state and preserve it.') if existing_grant else
                               'If the observed provider and scope match the human review, authorize and join without another confirmation. Ask only for missing or materially changed scope. Preparation alone enables no runtime.'))
+                    if selected(config) == GUI_QUEUE:
+                        value['account_scope'] = dict(login_metadata_pinned=False, exact_account_verified=False,
+                            limitation='The queue uses this desktop conversation\'s existing configuration; provider/account identity is not exposed by this route.')
+                        if authorized:
+                            value['next'] = 'Reuse the original approval; verify the pinned queue helper, native thread/home and membership. No daemon or provider/account inspection is available on this route.'
                     from .broker.bootstrap import prepared
                     prepared(config, connection, config['binding'])
                     return self.result(value)
@@ -265,7 +289,7 @@ class HostedServer:
                             expected = dict(previous)
                             if connection_lifetime: expected.pop('runtime_started_at', None)
                             if expected != grant: raise Blocked('Existing consent window and budget cannot be renewed or reset')
-                            active = runtime_policy.allowed(config) and config.get('allow_daemon_access') is True and config.get('allow_tool_output') is True
+                            active = runtime_active(config)
                             return self.result(dict(status='existing_authorization_preserved',connection=connection,expires_at=expiry,**proposed,**({'runtime_policy':{'mode':'connection'}} if connection_lifetime else {}),runtime_authorized=active,next_action='join_with_existing_checks' if active else 'stop_inactive_grant',receiver_started=False))
                         if self.setup_enabled:
                             preference = self.setup_policy.read()
@@ -280,7 +304,8 @@ class HostedServer:
                             started = time.time()
                             grant['runtime_started_at'] = started
                             config.update(runtime_policy={'mode':'connection'}, runtime_started_at=started)
-                        config.update(allow_runtime_turns=True,allow_daemon_access=True,allow_tool_output=True,trial_expires_at=expiry,hosted_runtime_grant=grant)
+                        daemon = selected(config) == DEFAULT_DAEMON
+                        config.update(allow_runtime_turns=True,allow_daemon_access=daemon,allow_tool_output=daemon,trial_expires_at=expiry,hosted_runtime_grant=grant)
                         config.pop('max_notices',None);config.pop('notification_policy',None)
                         config.update(proposed)
                         save_private(path,config)
@@ -298,12 +323,29 @@ class HostedServer:
                 result['content'] = [{'type': 'text', 'text': json.dumps(result['structuredContent'])}]
             return result
 
-    def review_setup(self, thread, *, change=False):
-        def inspect(path):
-            prepare(path, TRUSTED_ORIGIN, 'default', delivery=DEFAULT_DAEMON,
-                    native_thread=thread, inspect_default_daemon=True)
+    def review_setup(self, thread, *, change=False, expires_at=None):
+        def inspect(path, delivery=DEFAULT_DAEMON):
+            prepare(path, TRUSTED_ORIGIN, 'default', delivery=delivery,
+                    native_thread=thread, inspect_default_daemon=delivery == DEFAULT_DAEMON)
             return load_private(path)
-        return self.setup_policy.review(thread, self.elicit, inspect, change=change)
+        result = self.setup_policy.review(thread, self.elicit, inspect, change=change, expires_at=expires_at,
+                                         choose_host=(descriptor() or {}).get('delivery') == NATIVE_SETUP)
+        return {**result, **self.setup_status(thread)} if result['status'] == 'setup_active' else result
+
+    def setup_status(self, thread):
+        status = self.setup_policy.status(thread)
+        value = self.setup_policy.read()
+        if value:
+            status['delivery'] = value.get('delivery', DEFAULT_DAEMON)
+        if status['status'] == 'setup_active' and self.setup_policy.read()['id'] != self.loaded_setup_id:
+            if status['delivery'] == GUI_QUEUE:
+                return {**status, 'status': 'native_reload_required', 'membership_started': False,
+                    'next_action': 'end_turn_then_reload_same_conversation',
+                    'notice': 'Setup saved. End this turn. Restart the Codex desktop app normally, reopen this same chat, then Continue. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not start a CLI copy of this conversation or retry tools to bypass reload.'}
+            return {**status, 'status': 'native_reload_required', 'membership_started': False,
+                    'next_action': 'end_turn_then_reload_same_conversation',
+                    'notice': 'Setup saved. End this turn with the normal native reload instruction: /quit, then codex resume with this conversation\'s trusted native ID, then Continue. Wait for the old CLI to exit before resuming. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not retry tools or restart the shared daemon to bypass reload.'}
+        return status
 
     @staticmethod
     def result(value): return dict(content=[dict(type='text',text=json.dumps(value))],structuredContent=value)

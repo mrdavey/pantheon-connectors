@@ -18,7 +18,7 @@ from .catalog import for_origin
 from .transport import HTTP
 
 CONFIG = {'contract': 'pantheon.broker.v1'}
-REMOTE_COMMANDS = {'post', 'ack', 'ready', 'withdraw', 'handback', 'report', 'definition', 'result', 'confirm'}
+REMOTE_COMMANDS = {'post', 'ack', 'ready', 'ack_ready', 'withdraw', 'handback', 'report', 'definition', 'result', 'confirm'}
 
 
 def timestamp(value):
@@ -184,9 +184,9 @@ class BrokerClient(Client):
     def _command_tool(self, payload):
         arguments = dict(payload, connection=self.local_connection)
         op = arguments['op']
-        if op in ('post', 'ack'):
+        if op in ('post', 'ack', 'ack_ready'):
             arguments.pop('op')
-            if op == 'ack':
+            if op in ('ack', 'ack_ready'):
                 arguments['message_ids'] = arguments.pop('ids')
             return 'pantheon_' + op, arguments
         return 'pantheon_command', arguments

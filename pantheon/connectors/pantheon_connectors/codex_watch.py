@@ -5,6 +5,37 @@ import threading
 from .codex_queue import Notices
 from .state import load_private
 from .worker import Blocked
+from .client import APIError
+from .receiver_lifecycle import ReceiverScope
+
+
+def run(setup_file, connection, stop, report=None, audit=None):
+    """Plugin-owned desktop receiver. EOF stops only this reader, never Codex."""
+    scope = ReceiverScope(setup_file, connection, stop, audit)
+    initial = scope.initial
+    notices = Notices(initial, unchanged=scope.unchanged)
+    try:
+        while not stop.is_set():
+            notices.allowed()
+            try:
+                status = notices.tick(connection)
+                value = dict(status=status)
+                if status == 'connection_closed':
+                    from .native_cli import fence_hosted_runtime
+                    value['private_runtime_disabled'] = fence_hosted_runtime(setup_file, initial, connection)
+                    if report:
+                        report(value)
+                    return
+                scope.retry.reset()
+                delay = 5
+            except APIError as error:
+                value, delay = scope.recover_read(error)
+            if report:
+                report(value)
+            stop.wait(delay)
+    finally:
+        scope.report_expiry()
+
 
 
 def main():

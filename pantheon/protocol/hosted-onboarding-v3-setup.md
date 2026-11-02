@@ -41,7 +41,10 @@ the original `link` and `deliberate:true`. Otherwise:
    remember setup. Do not duplicate that form with a textual consent checklist,
    manufacture approval arguments or change global host permissions. Review
    capability choices before starting work. Decline/cancel/missing form grants
-   nothing. Preserve narrower previously approved audit limits in connect.
+   nothing. Preserve a fixed human deadline using the original UTC epoch in
+   `expires_at`, never a `consent` object. If connect opens the initial review,
+   the form displays that maximum and caps remembered setup as well as this chat.
+   A direct `pantheon_setup` review accepts the same narrowing-only deadline.
 4. Continue directly after setup. No extra “ready?” or “shall I join?” prompt.
    Fresh invitations get fresh memberships and grants using saved preferences.
    Closure, expiry, withdrawal and setup revocation stop runtime; retries never

@@ -208,8 +208,11 @@ class NativePlugin:
                 preview=lambda: self.service_factory({'url': hermes_setup.TRUSTED_ORIGIN}).preview(args['link']),
                 prepare=prepare,
                 authorize=authorize,
+                receive=lambda handle: call('pantheon_receive', {'connection': handle}),
                 join=lambda: call('pantheon_join', dict(link=args['link'], deliberate=True,
                     **({'name': args['name']} if 'name' in args else {}))))
+        from .feature_defaults import folders
+        value['default_folders'] = folders(pathlib.Path(self.prepare_root) / 'features')
         return json.dumps(value)
 
     def require_incoming(self):
@@ -361,7 +364,7 @@ class NativePlugin:
                 self.expire(config)
             if name == "pantheon_join" and args.get("deliberate") is True and not trial_allowed(config):
                 raise Blocked("A valid owner-approved anchored Hermes allowance is required before joining")
-            if name == 'pantheon_join' or (name == 'pantheon_command' and args.get('op') == 'ready'):
+            if name in ('pantheon_join', 'pantheon_ack_ready') or (name == 'pantheon_command' and args.get('op') == 'ready'):
                 self.require_incoming()
             service = self.service_factory(load_private(self.setup_file))
             def allowance():
@@ -421,6 +424,16 @@ class NativePlugin:
             self.audit.record('tool_error', operation=name, session=session_id, request=audit_request,
                               outcome='blocked', error=error)
             return json.dumps(error.result())
+        except JournalBusy as error:
+            self.audit.record("tool_error", operation=name, session=session_id, request=audit_request,
+                              outcome="blocked", error=error)
+            # The receiver and an explicit read share this nonblocking lock.
+            # Only a read is safe to resume; never classify a mutation as retryable.
+            return json.dumps({"status": "blocked",
+                "reason": "The receiver is collecting input. Preserve this connection and its original grant.",
+                "next_action": "resume_same_receive_after_service_recovers" if name == "pantheon_receive"
+                    else "report_specific_blocker_preserve_scope_without_restarting",
+                **({"retry_same_receive": True} if name == "pantheon_receive" else {})})
         except (Blocked, APIError) as error:
             # Closure can race an already-running model turn between receive and
             # explicit ACK. Only a verified terminal fence permits this separate
@@ -439,6 +452,8 @@ class NativePlugin:
             return json.dumps({"status": "blocked", "reason": error.guidance() if isinstance(error, APIError) else str(error),
                     "next_action":"report_specific_blocker_preserve_scope_without_restarting",
                     **({'retry_same_join': True} if name == 'pantheon_join'
+                       and isinstance(error, APIError) and error.retryable() else {}),
+                    **({'retry_same_receive': True} if name == 'pantheon_receive'
                        and isinstance(error, APIError) and error.retryable() else {})})
         except Exception as error:
             self.audit.record("tool_error", operation=name, session=session_id, request=audit_request,

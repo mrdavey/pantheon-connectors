@@ -70,6 +70,105 @@
       "type": "object"
     }
   },
+  "pantheon_ack_ready": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "context_version": {
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "message_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array"
+        },
+        "objective_version": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "message_ids",
+        "key",
+        "text",
+        "objective_version",
+        "context_version"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_ack_ready",
+    "operation": "ack_ready",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "completion_protocol": {
+          "enum": [
+            "pantheon.definition.v1"
+          ],
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "context_version": {
+          "type": "integer"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "message_ids": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "type": "array"
+        },
+        "objective_version": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "message_ids",
+        "key",
+        "epoch",
+        "config",
+        "text",
+        "objective_version",
+        "context_version"
+      ],
+      "type": "object"
+    }
+  },
   "pantheon_chat": {
     "authority": "chat.member",
     "contract": "1",

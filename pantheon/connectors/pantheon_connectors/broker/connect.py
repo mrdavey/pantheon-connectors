@@ -63,7 +63,7 @@ def validate(args, *, now=None):
 
 
 def run(args, *, prepare, authorize, join, inspect, preview, recall=lambda: None,
-        remember=lambda consent, state: None):
+        remember=lambda consent, state: None, receive=None):
     """Callbacks always operate in the adapter's authenticated native identity."""
     explicit = validate(args)
     prior = inspect()
@@ -129,9 +129,42 @@ def run(args, *, prepare, authorize, join, inspect, preview, recall=lambda: None
         raise Blocked('Join did not establish a connection; preserve its retry state')
     if explicit and 'remember_until' in explicit:
         remember(explicit, state)
-    return {**joined, 'onboarding_status': 'connected', 'consent_reused': bool(prior.get('active') or remembered),
+    result = {**joined, 'onboarding_status': 'connected', 'consent_reused': bool(prior.get('active') or remembered),
             'delivery_verified': False, 'next_action': 'receive_read_ack_then_ready',
-            'next': 'Fetch the scoped input, read it, explicitly ACK its message IDs and satisfy its readiness instruction. Then collaborate. Joining alone is not delivery verification.'}
+            'next': 'Fetch the scoped input, read it, explicitly ACK its message IDs and satisfy its readiness instruction. Then call pantheon_history to read permitted earlier context in 10-entry pages; use next as cursor for older entries as needed and explicitly ACK only other authors’ entries actually read. Past messages are context, not fresh work. Joining alone is not delivery verification.'}
+    if receive is not None:
+        def current_scope():
+            current = inspect()
+            if not current.get('active'):
+                raise Blocked('Runtime ended before returning input; preserve the connection and original grant')
+            if (joined['connection'] != authorized.get('connection') or
+                    any(current.get(k) != authorized.get(k) for k in ('lifetime', 'provider', 'connection'))):
+                raise Blocked('Connection scope changed before returning input; preserve the original grant')
+        current_scope()
+        try:
+            initial = receive(joined['connection'])
+            if isinstance(initial, dict) and initial.get('retry_same_receive') is True:
+                raise APIError(503)
+            if isinstance(initial, dict) and initial.get('status') == 'blocked':
+                raise Blocked(initial.get('reason', 'Initial receive was blocked; preserve this connection'))
+        except APIError as error:
+            if not error.retryable():
+                raise
+            # Join/claim/receipt may already have committed. A later receive
+            # resumes those same durable operations; never ACK or reauthorize.
+            current_scope()
+            result['initial_input_status'] = 'pending'
+            result['next_action'] = 'resume_same_receive_after_service_recovers'
+            result['next'] = 'The connection is saved but its first input could not be returned. Resume pantheon_receive on this same connection after service recovers; never renew consent or ACK unseen input. ' + result['next']
+        else:
+            current_scope()
+            if not isinstance(initial, dict) or not isinstance(initial.get('messages'), list):
+                raise Blocked('Invalid initial input result; preserve the connection and fetch it again')
+            result['initial_input'] = initial
+            result['initial_input_status'] = 'returned'
+            result['next_action'] = 'read_returned_input_then_explicit_ack'
+            result['next'] = 'Read initial_input now. Explicitly ACK only message IDs actually read. If a current probe was read and the installed tools offer pantheon_ack_ready, call it with those message_ids, the exact probe text and objective_version/context_version from that input’s server_controls; otherwise use explicit pantheon_ack then ready. If has_more is true, receive and read the remaining input. Then read permitted earlier context with pantheon_history. Returning input alone is not an ACK, readiness, agreement or delivery verification.'
+    return result
 
 
 class Review:
