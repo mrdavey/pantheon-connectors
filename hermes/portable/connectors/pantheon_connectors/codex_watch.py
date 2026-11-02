@@ -2,7 +2,7 @@
 import argparse
 import signal
 import threading
-from .codex_queue import Notices
+from .codex_queue import Notices, QueueUncertain
 from .state import load_private
 from .worker import Blocked
 from .client import APIError
@@ -30,6 +30,11 @@ def run(setup_file, connection, stop, report=None, audit=None):
                 delay = 5
             except APIError as error:
                 value, delay = scope.recover_read(error)
+            except QueueUncertain as error:
+                # Keep the existing reader available for a late native begin.
+                # An unresolved tick only reads our journal: no native retry,
+                # remote polling, new receiver, or renewed grant.
+                value, delay = dict(status='delivery_uncertain', **error.details), 5
             if report:
                 report(value)
             stop.wait(delay)

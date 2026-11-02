@@ -18,6 +18,7 @@ import traceback
 from .onboarding import private_directory
 from .worker import Blocked
 from .version import CODEX_VERSION
+from .codex_queue import QUEUE_FAILURES
 
 EVENTS = {'tool_requested', 'tool_completed', 'tool_failed', 'receiver_started',
           'receiver_status', 'receiver_stopped', 'plugin_closed', 'delivery_attempt',
@@ -26,12 +27,13 @@ TOOLS = {'pantheon_authorize', 'pantheon_prepare', 'pantheon_preview', 'pantheon
          'pantheon_receive', 'pantheon_ack', 'pantheon_post', 'pantheon_command',
          'pantheon_begin_wake', 'pantheon_finish_wake', 'pantheon_site_deploy', 'pantheon_site_status', 'unknown'}
 TOOLS |= {'pantheon_transfer_send', 'pantheon_transfer_inspect', 'pantheon_transfer_fetch', 'pantheon_transfer_ack'}
-STATES = {'idle', 'active', 'outstanding', 'accepted_not_received', 'stopped', 'unknown', 'transport_retry'}
+STATES = {'idle', 'active', 'outstanding', 'accepted_not_received', 'stopped', 'unknown', 'transport_retry', 'delivery_uncertain'}
 REASONS = {'guard_failed', 'api_error', 'transport_error', 'state_error', 'unexpected',
            'expired', 'scope_changed', 'identity_mismatch', 'endpoint_changed',
            'uncertain_delivery', 'native_approval', 'budget_exhausted', 'withdrawn',
            'tls_verification_failed', 'tls_trust_unavailable', 'network_unavailable', 'network_timeout',
            'local_file_missing', 'local_file_access_denied', 'local_symlink_refused', 'read_retry_exhausted'}
+REASONS |= QUEUE_FAILURES
 MODULES = {p.name for p in Path(__file__).parent.glob('codex*.py')} | {'native_cli.py', 'onboarding.py', 'state.py', 'client.py'}
 
 
@@ -117,6 +119,8 @@ class Audit:
             elif key == 'source' and isinstance(value, str) and value in MODULES: row[key] = value
             elif key in ('line', 'http_status', 'message_count', 'ack_count', 'duration_ms', 'notices_used'):
                 if type(value) is int and 0 <= value <= 10**9: row[key] = value
+            elif key in ('exit_code', 'errno'):
+                if type(value) is int and -255 <= value <= 255: row[key] = value
         data = (json.dumps(row, sort_keys=True)+'\n').encode()
         try:
             private_directory(self.directory)

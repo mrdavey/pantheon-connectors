@@ -2,12 +2,13 @@ import json
 import os
 import pathlib
 import subprocess
+import sys
 import tempfile
 import time
 import types
 import unittest
 from unittest.mock import patch
-from pantheon_connectors.codex_queue import Notices, QueueCLI
+from pantheon_connectors.codex_queue import Notices, QueueCLI, QueueUncertain
 from pantheon_connectors.codex_panel import Server, URI
 from pantheon_connectors.native_cli import binding_for
 from pantheon_connectors.state import save_private
@@ -101,6 +102,94 @@ class QueueTests(unittest.TestCase):
         with self.assertRaises(Blocked): self.restart().tick(CONNECTION)
         self.assertEqual(len(self.calls), 1)
 
+    def test_lost_receipt_recovers_only_when_actual_native_wake_begins(self):
+        self.failure = subprocess.TimeoutExpired('PRIVATE COMMAND', 30, output='PRIVATE OUTPUT')
+        with self.assertRaises(QueueUncertain): self.router.tick(CONNECTION)
+        identity = next(iter(self.router.read()['notices']))
+        self.assertEqual(self.router.diagnostics()['failures'], [{'reason': 'queue_timeout'}])
+        with self.assertRaises(QueueUncertain): self.restart().tick(CONNECTION)
+        with self.assertRaises(Blocked): self.router.wake(CONNECTION, identity, finish=True)
+        self.assertEqual(self.restart().wake(CONNECTION, identity)['status'], 'draining')
+        entry = self.router.read()['notices'][identity]
+        self.assertEqual(entry['reconciled_from'], 'uncertain')
+        self.assertIn('native_delivery_confirmed_at', entry)
+        self.assertNotIn('accepted_at', entry)
+        self.assertEqual(self.router.wake(CONNECTION, identity, finish=True)['status'], 'drain_required')
+        self.pending = []  # Only explicit native ACK consumes work.
+        self.assertEqual(self.router.wake(CONNECTION, identity, finish=True)['status'], 'completed')
+        self.assertEqual(self.router.diagnostics()['unresolved_count'], 0)
+        self.failure = None
+        self.pending = [dict(protocol='pyros.v1', binding=self.config['binding'], message={'id': 'next'})]
+        self.restart().tick(CONNECTION)
+        self.assertEqual(len(self.calls), 2)
+        self.assertNotIn('PRIVATE', self.router.path.read_text())
+
+    def test_crash_during_attempt_needs_native_begin_and_recorded_invocation(self):
+        self.router.tick(CONNECTION)
+        identity = next(iter(self.router.read()['notices']))
+        data = self.router.read()
+        entry = data['notices'][identity]
+        entry['state'] = 'queue_attempting'
+        entry.pop('accepted_at')
+        save_private(self.router.path, data)
+        with self.assertRaises(QueueUncertain): self.restart().tick(CONNECTION)
+        self.assertEqual(self.restart().wake(CONNECTION, identity)['status'], 'draining')
+        entry.pop('attempted_at')
+        save_private(self.router.path, data)
+        with self.assertRaises(Blocked): self.restart().wake(CONNECTION, identity)
+        self.assertEqual(len(self.calls), 1)
+
+    def test_uncertain_begin_retains_native_identity_scope_and_expiry_guards(self):
+        from pantheon_connectors.native_cli import execute
+        self.failure = QueueUncertain()
+        with self.assertRaises(QueueUncertain): self.router.tick(CONNECTION)
+        identity = next(iter(self.router.read()['notices']))
+        args = {'connection': CONNECTION, 'wake_id': identity}
+        with patch('pantheon_connectors.codex_queue.Notices', return_value=self.router), patch.dict(os.environ, CODEX_HOME='/chosen/home'):
+            with self.assertRaises(Blocked): execute(self.config, 'pantheon_begin_wake', args, native_thread='wrong')
+            with self.assertRaises(Blocked): self.router.wake('b'*32, identity)
+            with self.assertRaises(Blocked): self.router.wake(CONNECTION, 'unknown')
+            self.config['trial_expires_at'] = time.time()-1
+            with self.assertRaises(Blocked): execute(self.config, 'pantheon_begin_wake', args, native_thread=THREAD)
+        self.assertEqual(json.loads(self.router.path.read_text())['notices'][identity]['state'], 'uncertain')
+        self.assertEqual(len(self.calls), 1)
+
+    def test_nonzero_diagnostics_never_retain_output_or_permit_retry(self):
+        for stderr, reason in (
+            ('Error: failed to resolve config cwd: No such file or directory (os error 2)', 'queue_cwd_unavailable'),
+            ('PRIVATE thread already has an active writer SECRET', 'native_writer_busy'),
+            ('PRIVATE daemon does not support thread/queue/add SECRET', 'native_queue_unsupported'),
+            ('PRIVATE user message queue is unavailable SECRET', 'native_queue_unavailable'),
+            ('PRIVATE unexpected failure SECRET', 'queue_exit_nonzero')):
+            with self.subTest(reason=reason):
+                self.config['state_dir'] = str(pathlib.Path(self.temp.name).resolve()/reason)
+                self.calls.clear()
+                def run(*args, **kwargs):
+                    self.calls.append(args)
+                    return types.SimpleNamespace(returncode=1, stdout='PRIVATE STDOUT', stderr=stderr)
+                self.queue.send = lambda text: QueueCLI(self.config, run).send(text)
+                router = self.restart()
+                with self.assertRaises(QueueUncertain): router.tick(CONNECTION)
+                with self.assertRaises(QueueUncertain): self.restart().tick(CONNECTION)
+                self.assertEqual(len(self.calls), 1)
+                self.assertEqual(router.diagnostics()['failures'], [{'reason': reason, 'exit_code': 1}])
+                self.assertNotIn('PRIVATE', router.path.read_text())
+                self.assertNotIn('SECRET', str(router.diagnostics()))
+
+    def test_old_uncertain_journal_is_diagnosable_without_replay_or_raw_details(self):
+        self.failure = ValueError('PRIVATE')
+        with self.assertRaises(QueueUncertain): self.router.tick(CONNECTION)
+        data = self.router.read()
+        entry = next(iter(data['notices'].values()))
+        entry.pop('failure')
+        save_private(self.router.path, data)
+        self.assertEqual(self.restart().diagnostics()['failures'], [{'reason': 'queue_outcome_unknown'}])
+        entry['failure'] = {'reason': 'PRIVATE', 'stderr': 'SECRET', 'exit_code': 'secret'}
+        save_private(self.router.path, data)
+        self.assertEqual(self.restart().diagnostics()['failures'], [{'reason': 'queue_outcome_unknown'}])
+        with self.assertRaises(QueueUncertain): self.restart().tick(CONNECTION)
+        self.assertEqual(len(self.calls), 1)
+
     def test_permission_failure_preflight_does_not_fallback(self):
         self.available = PermissionError('denied')
         with self.assertRaises(PermissionError): self.router.tick(CONNECTION)
@@ -185,12 +274,39 @@ class QueueTests(unittest.TestCase):
         cli.send('harmless')
         self.assertEqual(calls[-1][0], ['/pinned/codex','queue','--thread',THREAD,'--message','harmless'])
         self.assertEqual(calls[-1][1]['env']['CODEX_HOME'], '/chosen/home')
+        self.assertTrue(all(options['cwd'] == '/chosen/home' for _, options in calls))
         self.assertNotIn('shell', calls[-1][1])
         self.config['binding']['profile']='chosen-profile'
         cli.send('harmless')
         self.assertEqual(calls[-1][0][-2:], ['--profile','chosen-profile'])
 
+    def test_real_subprocess_survives_deleted_plugin_launch_directory(self):
+        root = pathlib.Path(self.temp.name).resolve()
+        home = root/'stable-home'; home.mkdir()
+        launch = root/'removed-plugin'; launch.mkdir()
+        executable = root/'queue-fixture'
+        executable.write_text('#!' + sys.executable + '\n' +
+            'import os,sys\nassert os.getcwd() == os.environ["CODEX_HOME"]\n' +
+            'if sys.argv[-1] == "--version": print("codex-cli 0.162.1")\n' +
+            'elif sys.argv[-1] == "--help": print("--thread --message")\n' +
+            'else: print("Queued message fixture-id for thread ' + THREAD + '.")\n')
+        executable.chmod(0o700)
+        config = dict(self.config, codex_home=str(home), codex_executable=str(executable))
+        script = ('import json,os,pathlib,sys\nfrom pantheon_connectors.codex_queue import QueueCLI\n'
+                  'config=json.loads(sys.argv[1]); launch=pathlib.Path(sys.argv[2])\n'
+                  'os.chdir(launch); launch.rmdir()\n'
+                  'cli=QueueCLI(config); assert cli.available()\n'
+                  'assert cli.send("fixture") ["native_queue_id"] == "fixture-id"\n')
+        result = subprocess.run([sys.executable, '-c', script, json.dumps(config), str(launch)],
+                                capture_output=True, text=True, timeout=10,
+                                env=dict(os.environ, PYTHONPATH=str(pathlib.Path(__file__).resolve().parents[1])))
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(launch.exists())
+
     def test_only_missing_executable_or_known_missing_queue_allows_fallback(self):
+        def missing_home(*args, **kwargs): raise FileNotFoundError(2, 'missing', self.config['codex_home'])
+        with self.assertRaisesRegex(Blocked, 'home is unavailable'):
+            QueueCLI(self.config, missing_home).available()
         def absent(*args, **kwargs): raise FileNotFoundError()
         self.assertFalse(QueueCLI(self.config, absent).available())
         def fail(argv, **kwargs):

@@ -155,13 +155,20 @@ class Onboarding:
                 "name": config["name"], "binding": config["binding"], "deliberate": True})
             config["redeemed"] = True
             save_private(path, config)
+        progress = {}
         if config.get('mcp') is not None:
             record(self.config, identity, binding, 'joined', 'redemption_committed')
             # Redemption is already durable. An interrupted exchange resumes this
             # same member and never consumes another invitation or grants a turn.
             _, _, client = self.member(identity, binding)
-            client.request('/v1/chat')
-        return {"connection": identity, "status": "joined_awaiting_real_agent_probe",
+            view = client.request('/v1/chat')
+            chat = view.get('chat', {})
+            chat_id = chat.get('id', '')
+            if isinstance(chat_id, str) and re.fullmatch(r'[a-f0-9]{32}', chat_id):
+                progress = {'chat_url': self.url + '/app?chat=' + chat_id,
+                            'collaboration_status': 'connected' if chat.get('state') in ('waiting', 'active') else 'ended',
+                            'progress_guidance': 'Show the human this chat link and the observed connection state. Before yielding to peers, say “Pantheon · Waiting for collaborators” with the link, then end the native turn. Update only on meaningful state changes; never poll or animate text to keep a turn alive. Connected does not prove delivery or completion.'}
+        return {**progress, "connection": identity, "status": "joined_awaiting_real_agent_probe",
                 "next": "Call pantheon_receive, explicitly ACK the IDs, then ready with the exact probe text. No harness ACK is automatic."}
 
     def member(self, connection, binding, *, allow_expired=False):

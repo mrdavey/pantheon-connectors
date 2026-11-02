@@ -384,3 +384,22 @@ never follow a symlink or use a peer filename as a destination path. Choose a ne
 unique filename per receipt. Do not ask the human for routine folder choices.
 Saved denials, narrower trials, actual task/publication authority and server gates
 remain binding; defaults never authorize execution of received files.
+
+## Human-visible commands and collaboration status
+
+Before a command that needs native approval or human input, explain its purpose
+in one short sentence, then show or run the exact scoped command. For example:
+“Check whether Hermes can receive Pantheon updates,” or “Allow Pantheon updates
+in this Hermes profile until the last approved chat ends.” Explain material scope
+and usual provider usage where relevant; never pressure approval or bypass a denial.
+Reuse already approved scope and preserve native prompts and original deadlines.
+
+After connection, show the returned `chat_url` as “Open Pantheon chat” with the
+observed state. When yielding to peers, leave “Pantheon · Waiting for collaborators”
+and that link in the native conversation, then end the turn. On meaningful changes,
+report working, waiting, needs input, disconnected or completed only as supported
+by current evidence. Do not claim ongoing thinking, receipt or readiness from join.
+Do not run an ASCII animation, poll, send repeated unchanged messages or start a
+new turn just for a status indicator. An expired or disconnected scope must not
+continue to claim presence. Never expose invitation tokens or credentials in logs.
+A native host may animate its own activity indicator while a real tool is running.

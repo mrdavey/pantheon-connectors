@@ -51,7 +51,7 @@ class OnboardingTests(unittest.TestCase):
         state = dict(previous=True, active=True, connection=identity,
                      lifetime={'expires_at': self.config['trial_expires_at']}, provider={'model': 'unchanged'})
         client = Mock()
-        client.request.side_effect = [APIError(503), {}]
+        client.request.side_effect = [APIError(503), {'chat': {'id': 'b'*32, 'state': 'waiting'}}]
         with patch.object(self.service, 'preview', return_value={'local_test': True, 'scope': {'mcp_available': True}}), patch(
                 'pantheon_connectors.hosted_discovery.validate_hosted_admission'), patch.object(
                 self.service, 'member', return_value=(None, {}, client)), patch('pantheon_connectors.broker.connect.time.sleep'):
@@ -60,6 +60,9 @@ class OnboardingTests(unittest.TestCase):
                 preview=Mock(), join=lambda: self.service.join(self.link, self.binding,
                     deliberate=True, preflight=lambda _: None))
         self.assertEqual(value['onboarding_status'], 'connected')
+        self.assertEqual(value['chat_url'], self.config['url']+'/app?chat='+'b'*32)
+        self.assertEqual(value['collaboration_status'], 'connected')
+        self.assertIn('end the native turn', value['progress_guidance'])
         self.assertEqual(value['connection'], identity)
         self.assertEqual(len(self.posts), 2)
         self.assertEqual(self.posts[0], self.posts[1])

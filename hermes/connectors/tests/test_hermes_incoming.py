@@ -30,6 +30,8 @@ class NativePermissionProbe(unittest.TestCase):
             with patch.object(hermes_incoming.subprocess, 'run', side_effect=error):
                 self.assertFalse(hermes_incoming.allowed('default'))
         result = hermes_incoming.PermissionRequired('observed profile').result()
+        self.assertIn('receive Pantheon updates', result['command_explanations']['inspect'])
+        self.assertIn('restore the prior setting', result['command_explanations']['enable_only_under_explicit_approval'])
         self.assertIn("--profile 'observed profile'", result['native_commands']['inspect'])
         self.assertIn('explicit_approval', next(k for k in result['native_commands'] if k != 'inspect'))
 

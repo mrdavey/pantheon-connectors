@@ -4,6 +4,10 @@
 Stage reads an invitation from stdin, privately previews it, and verifies immutable
 package bytes. Install requires the reviewed stage digest and normal host prompts.
 No invitation is saved or passed in argv. No runtime consent or membership minted.
+The latest qualified release comes from HTTPS discovery, never a branch tip.
+Package source_commit/source_revision is an internal build identity, not a public
+Git revision. Public-source metadata supplies the accessible revision; compare its
+complete package subtree and provenance instead of fetching the private build ID.
 """
 import argparse
 import gzip
@@ -50,19 +54,90 @@ def fetch(url, *, body=None, limit=65536):
     parsed = urlsplit(url)
     if parsed.scheme+'://'+parsed.netloc != ORIGIN or parsed.query or parsed.fragment:
         raise ValueError('Bootstrap requires exact same-origin HTTPS without queries')
+    return fetch_https(url, body=body, limit=limit)
+
+
+class HTTPSFailure(ValueError):
+    def __init__(self, classification):
+        self.classification = classification
+        super().__init__('Trusted HTTPS request failed ('+classification+'); preserve progress and inspect the host/network failure')
+
+
+def fetch_https(url, *, body=None, limit=65536):
     # System curl uses native certificate trust; no redirects, insecure mode,
     # shell interpolation or invitation-bearing command-line argument.
-    args = ['curl', '--silent', '--show-error', '--fail', '--proto', '=https',
+    args = ['curl', '--disable', '--silent', '--show-error', '--fail', '--proto', '=https',
             '--max-time', '40', '--max-filesize', str(limit), '--write-out', '\n%{http_code}']
     data = None
     if body is not None:
         args += ['--header', 'Content-Type: application/json', '--data-binary', '@-']
         data = json.dumps(body).encode()
-    result = subprocess.run([*args, url], input=data, capture_output=True, timeout=45)
+    try:
+        result = subprocess.run([*args, url], input=data, capture_output=True, timeout=45)
+    except subprocess.TimeoutExpired:
+        raise HTTPSFailure('timeout') from None
     payload, _, status = result.stdout.rpartition(b'\n')
-    if result.returncode or status != b'200' or len(payload) > limit:
-        raise ValueError('Trusted HTTPS request failed; preserve progress and inspect the specific host/network failure')
+    if status != b'200' and re.fullmatch(rb'[1-5][0-9]{2}', status):
+        raise HTTPSFailure('http-'+status.decode('ascii'))
+    if result.returncode:
+        code = result.returncode if type(result.returncode) is int and 1 <= result.returncode <= 99 else 0
+        raise HTTPSFailure('curl-'+str(code))
+    if status != b'200':
+        raise HTTPSFailure('invalid-status')
+    if len(payload) > limit:
+        raise HTTPSFailure('response-too-large')
     return payload
+
+
+def validate_public_source(source, package):
+    expected = {'schema', 'repository', 'revision', 'path', 'package_sha256', 'package_version', 'source_revision'}
+    if (not isinstance(source, dict) or set(source) != expected
+            or source['schema'] != 'pantheon.public-source.v1'
+            or source['repository'] != 'https://github.com/mrdavey/pantheon-connectors.git'
+            or not re.fullmatch(r'[0-9a-f]{40}', source['revision'])
+            or source['path'] != ('pantheon' if package['runtime'] == 'codex' else 'hermes')
+            or source['package_sha256'] != package['sha256']
+            or source['package_version'] != package['version']
+            or source['source_revision'] != package['source_revision']):
+        raise ValueError('Public source does not match the qualified release')
+    return source
+
+
+def verify_provenance(files, package):
+    provenance = json.loads(files['SOURCE-PROVENANCE.json'])
+    if (provenance.get('format') != 'pantheon.hermes-distribution.v1'
+            or provenance.get('source_commit') != package['source_revision']
+            or set(provenance['files']) != set(files)-{'SOURCE-PROVENANCE.json'}):
+        raise ValueError('Hermes source provenance inventory differs')
+    for name, record in provenance['files'].items():
+        if hashlib.sha256(files[name]).hexdigest() != record['sha256']:
+            raise ValueError('Hermes source provenance file hash differs')
+
+
+def verify_public_source(source, package, files):
+    validate_public_source(source, package)
+    # Fixed public host/repository and a validated immutable commit, no credentials,
+    # redirects, Git helpers, branch fallback or private repository lookup.
+    revision = source['revision']
+    raw = fetch_https('https://codeload.github.com/mrdavey/pantheon-connectors/tar.gz/'+revision, limit=MAX_ARCHIVE)
+    snapshot = archive_files(raw, hashlib.sha256(raw).hexdigest())
+    prefix = 'pantheon-connectors-'+revision+'/'
+    if any(not name.startswith(prefix) for name in snapshot):
+        raise ValueError('Unexpected public source archive root')
+    subtree = prefix+source['path']+'/'
+    actual = {name[len(subtree):]: content for name, content in snapshot.items() if name.startswith(subtree)}
+    expected = {name.removeprefix('pantheon/') if package['runtime'] == 'codex' else name: content for name, content in files.items()}
+    if actual != expected:
+        raise ValueError('Public source files differ from the qualified package')
+    if package['runtime'] == 'hermes':
+        verify_provenance(files, package)
+    return dict(source, verified_files=len(actual),
+        meaning='source_revision identifies the private build; revision is the verified public snapshot. No private repository access is required.')
+
+
+def public_source(package, files):
+    source = json.loads(fetch(ORIGIN+'/v1/onboarding/source/'+package['runtime']))
+    return verify_public_source(source, package, files)
 
 
 def descriptor(host):
@@ -152,6 +227,7 @@ def stage(host, root, link):
         write_new(archive_path, data)
     data = read_archive(archive_path)
     files = archive_files(data, package['sha256'])
+    source = public_source(package, files) if host == 'hermes' else None
     tree = private(directory / 'expanded')
     for name, content in files.items():
         target = tree / name
@@ -163,7 +239,7 @@ def stage(host, root, link):
             write_new(target, content)
     review = {'host': host, 'package_sha256': package['sha256'], 'source_revision': package['source_revision'], 'version': package['version']}
     digest = hashlib.sha256(json.dumps(review, sort_keys=True).encode()).hexdigest()
-    return dict(stage=str(directory), approval_digest=digest, package=review, scope=preview.get('scope', preview),
+    return dict(stage=str(directory), approval_digest=digest, package=review, public_source=source, scope=preview.get('scope', preview),
                 next='Review the verified package and one combined install-and-enable/native-connection scope. Then run install with this exact digest. Native security, dependency and incoming-permission prompts remain in control.')
 
 
@@ -177,6 +253,8 @@ def install(host, directory, approval_digest, *, routine_tools=False):
         raise ValueError('Release changed since review; stage and review the new package')
     data = read_archive(directory / 'package.tar.gz')
     files = archive_files(data, package['sha256'])
+    if host == 'hermes':
+        public_source(package, files)
     expanded = directory / 'expanded'
     tree = expanded / 'pantheon' if host == 'codex' else expanded
     for name, content in files.items():
@@ -279,14 +357,23 @@ def verify_hermes_enabled(installed, version):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['stage', 'install'])
+    parser.add_argument('action', choices=['stage', 'install', 'verify'])
     parser.add_argument('--host', choices=['codex', 'hermes'], required=True)
-    parser.add_argument('--directory', type=Path, required=True)
+    parser.add_argument('--directory', type=Path)
     parser.add_argument('--approval-digest')
     parser.add_argument('--trust-routine-tools', action='store_true', help='Only with explicit approval of the fixed routine-tool list; sensitive/future tools retain prompts')
     args = parser.parse_args()
+    if args.action != 'verify' and args.directory is None:
+        parser.error('--directory is required for stage and install')
     try:
-        if args.action == 'stage':
+        if args.action == 'verify':
+            # Public-only fresh-install verification: no invitation, installation,
+            # native grant, model call or private host configuration.
+            package = descriptor(args.host)['packages'][args.host]
+            raw = fetch(package['artifact_url'], limit=MAX_ARCHIVE)
+            files = archive_files(raw, package['sha256'])
+            value = {'status': 'verified', 'package': package, 'public_source': public_source(package, files)}
+        elif args.action == 'stage':
             value = stage(args.host, args.directory, sys.stdin.read(4096).strip())
         else:
             value = install(args.host, args.directory, args.approval_digest, routine_tools=args.trust_routine_tools)

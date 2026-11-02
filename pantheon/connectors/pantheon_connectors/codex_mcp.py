@@ -58,7 +58,7 @@ class Server:
                     changed = self.status.get(connection) != value
                     self.status[connection] = value
                 if changed:
-                    self.audit.emit('receiver_status', connection=connection, **{k:v for k,v in value.items() if k in ('status','wake_id','turn_id')})
+                    self.audit.emit('receiver_status', connection=connection, **{k:v for k,v in value.items() if k in ('status','wake_id','turn_id','reason','exit_code','errno')})
             def work():
                 try:
                     receiver = run
@@ -138,6 +138,10 @@ class Server:
             value = execute(config, name, args, native_thread=thread, setup_file=self.setup_file)
             if name == 'pantheon_join' and value.get('connection'):
                 self.start(value['connection'])
+            if name == 'pantheon_begin_wake' and mode == GUI_QUEUE and value.get('status') == 'draining':
+                # A native-delivered wake can recover a reader stopped by an
+                # earlier plugin process. start coalesces an existing worker.
+                self.start(args['connection'])
             if name == 'pantheon_command' and args.get('op') == 'withdraw':
                 worker = self.workers.get(args['connection'])
                 if worker:

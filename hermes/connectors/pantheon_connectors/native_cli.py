@@ -78,7 +78,13 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             raise Blocked('Local runtime scope changed; preserve this connection and check current authorization')
         return current
     def allowance():
-        return trial_allowed(current_scope())
+        current = current_scope()
+        if not trial_allowed(current):
+            return False
+        if selected(current) == GUI_QUEUE:
+            from .codex_queue import Notices
+            return Notices(current).closure_allows(current.get('invitation_connection'))
+        return True
     binding = binding_for(config, native_thread)
     from .broker.codex_setup_policy import require_tool
     require_tool(config, name, args)
@@ -119,7 +125,7 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             raise Blocked('Runtime authorization ended during native preflight')
     def doctor():
         current = current_scope()
-        if (selected(current) == GUI_QUEUE and not trial_allowed(current)) or (selected(current) == DEFAULT_DAEMON and (
+        if (selected(current) == GUI_QUEUE and not allowance()) or (selected(current) == DEFAULT_DAEMON and (
                 not trial_allowed(current) or current.get('allow_daemon_access') is not True
                 or current.get('allow_tool_output') is not True)):
             return dict(status='local_runtime_inactive', runtime_authorized=False,
@@ -135,7 +141,9 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             return dict(status="default_daemon_preflight_passed", released=False, runtime_verified=False,
                         notice="No turn requested. After scoped join the plugin manages its bounded receiver.")
         if selected(config) == GUI_QUEUE:
+            from .codex_queue import Notices
             return dict(status='queue_preflight_passed', runtime_verified=False,
+                        queue_delivery=Notices(config).diagnostics(),
                         notice='No turn requested. The plugin manages the receiver after scoped join. Queue acceptance alone is not an agent receipt or ACK.')
         return {"status": "queue_preflight_passed" if binding['surface'] == 'native-queue' else "shared_owner_preflight_passed", "released": False,
                 "notice": "No turn requested. The owner must approve the bounded trial and start its receiver."}

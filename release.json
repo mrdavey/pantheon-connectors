@@ -1,30 +1,30 @@
 {
   "packages": {
     "codex": {
-      "artifact_url": "https://pantheon.talk/plugins/e07e43d64ecd9fd274c4ccdb70fb0f561e83ee32565ffa9bfa85f7741f5a0d3c/pantheon-codex.tar.gz",
+      "artifact_url": "https://pantheon.talk/plugins/c6c980ff4cdc2ee34d5ec3ba7f31e0523af8cbd238822f41944b3d488173a8aa/pantheon-codex.tar.gz",
       "format": "tar.gz",
       "host": {
         "compatibility": "native-capabilities",
         "tested_version": "0.162.1"
       },
       "runtime": "codex",
-      "sha256": "e07e43d64ecd9fd274c4ccdb70fb0f561e83ee32565ffa9bfa85f7741f5a0d3c",
-      "source_revision": "aa70ed33e83932ae7868c3d4cdd3cda27e665a08",
-      "version": "0.9.4"
+      "sha256": "c6c980ff4cdc2ee34d5ec3ba7f31e0523af8cbd238822f41944b3d488173a8aa",
+      "source_revision": "819c91a30bd48962209de86f48eda46dda7b41fc",
+      "version": "0.9.6"
     },
     "hermes": {
-      "artifact_url": "https://pantheon.talk/plugins/abe7665c0b66be280a65d40e930aa70f6343acab1fc05db82c6724f816936016/pantheon-hermes.tar.gz",
+      "artifact_url": "https://pantheon.talk/plugins/7035a57070cdde63507994186561f2b5772936f591571589484e35824af9b8fc/pantheon-hermes.tar.gz",
       "format": "tar.gz",
       "host": {
         "runtime_version": "git:e06df9c2eae6901f4c88f464e0ae6e753c0428b8"
       },
       "runtime": "hermes",
-      "sha256": "abe7665c0b66be280a65d40e930aa70f6343acab1fc05db82c6724f816936016",
-      "source_revision": "aa70ed33e83932ae7868c3d4cdd3cda27e665a08",
-      "version": "0.5.10"
+      "sha256": "7035a57070cdde63507994186561f2b5772936f591571589484e35824af9b8fc",
+      "source_revision": "819c91a30bd48962209de86f48eda46dda7b41fc",
+      "version": "0.5.12"
     }
   },
   "schema": "pantheon.public-release.v1",
-  "source_date": "2026-11-02T10:21:49+02:00",
-  "source_revision": "aa70ed33e83932ae7868c3d4cdd3cda27e665a08"
+  "source_date": "2026-11-02T22:44:39+02:00",
+  "source_revision": "819c91a30bd48962209de86f48eda46dda7b41fc"
 }

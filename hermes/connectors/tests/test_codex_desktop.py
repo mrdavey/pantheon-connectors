@@ -14,7 +14,7 @@ from unittest.mock import Mock, patch
 from pantheon_connectors import codex_delivery as delivery, codex_hosted as hosted, codex_setup, hosted_v3
 from pantheon_connectors.broker import codex_setup_policy as policy
 from pantheon_connectors.codex_mcp import Server
-from pantheon_connectors.codex_queue import Notices
+from pantheon_connectors.codex_queue import Notices, QueueUncertain
 from pantheon_connectors.codex_watch import run
 from pantheon_connectors.native_cli import execute
 from pantheon_connectors.runtime_policy import allowed
@@ -191,14 +191,133 @@ class DesktopQueueTests(unittest.TestCase):
         with self.assertRaises(Blocked): self.router.tick(CONNECTION)
         self.assertEqual(self.calls, [])
 
-    def test_closure_during_queue_preflight_suppresses_new_notice(self):
+    def test_closure_during_queue_preflight_reserves_one_terminal_notice(self):
         def close():
             self.chat_state = 'closed'
             return True
         self.queue.available = close
+        self.assertEqual(self.router.tick(CONNECTION), 'queue_accepted_not_received')
+        self.assertEqual(len(self.calls), 1)
+        self.assertIn('Do not start new work', self.calls[0])
+        self.assertEqual(self.restart().tick(CONNECTION), 'idle_or_notice_unresolved')
+        self.assertEqual(len(self.calls), 1)
+
+    def test_accepted_wake_can_begin_after_peer_confirms_final_result(self):
+        self.router.tick(CONNECTION)
+        wake = next(iter(self.router.read()['notices']))
+        self.chat_state = 'closed'
+        self.assertEqual(self.router.tick(CONNECTION), 'idle_or_notice_unresolved')
+        self.assertNotIn(CONNECTION, self.router.read().get('withdrawn_connections', {}))
+        self.assertEqual(self.restart().wake(CONNECTION, wake)['status'], 'draining')
+        self.pending = []  # The native owner explicitly reads and ACKs final input.
+        self.assertEqual(self.router.wake(CONNECTION, wake, finish=True)['status'], 'completed')
         self.assertEqual(self.router.tick(CONNECTION), 'connection_closed')
+        self.assertEqual(len(self.calls), 1)
+
+    def test_idle_closure_delivers_one_terminal_wake_inside_original_scope(self):
+        self.chat_state = 'closed'
+        self.assertEqual(self.router.tick(CONNECTION), 'queue_accepted_not_received')
+        wake = next(iter(self.router.read()['notices']))
+        self.assertEqual(self.restart().tick(CONNECTION), 'idle_or_notice_unresolved')
+        self.assertEqual(self.router.wake(CONNECTION, wake)['status'], 'draining')
+        self.pending = []
+        self.assertEqual(self.router.wake(CONNECTION, wake, finish=True)['status'], 'completed')
+        self.pending = [dict(protocol='pyros.v1', binding=self.config['binding'], message={'id': 'later'})]
+        self.assertEqual(self.restart().tick(CONNECTION), 'connection_closed')
+        self.assertEqual(len(self.calls), 1)
+
+    def test_direct_native_turn_keeps_fixed_closure_read_grace_without_pending_input(self):
+        self.pending = []
+        self.chat_state = 'closed'
+        observed = time.time()
+        with patch('pantheon_connectors.codex_queue.time.time', return_value=observed):
+            self.assertEqual(self.router.tick(CONNECTION), 'idle_or_notice_unresolved')
+        with patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 59):
+            self.assertEqual(self.restart().tick(CONNECTION), 'idle_or_notice_unresolved')
+        with patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 60):
+            self.assertEqual(self.restart().tick(CONNECTION), 'connection_closed')
+        self.assertEqual(self.router.read()['closed_observed_at'][CONNECTION], observed)
         self.assertEqual(self.calls, [])
-        self.assertIn(CONNECTION, self.router.read()['withdrawn_connections'])
+
+    def test_uncertain_terminal_attempt_expires_locally_without_replay(self):
+        self.chat_state = 'closed'
+        self.failure = TimeoutError('outcome unknown')
+        observed = time.time()
+        with patch('pantheon_connectors.codex_queue.time.time', return_value=observed):
+            with self.assertRaises(QueueUncertain): self.router.tick(CONNECTION)
+        wake = next(iter(self.router.read()['notices']))
+        with patch.object(self.router.service, 'member', side_effect=AssertionError('remote read')):
+            with patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 59):
+                with self.assertRaises(QueueUncertain): self.router.tick(CONNECTION)
+            with patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 60):
+                self.assertEqual(self.router.tick(CONNECTION), 'connection_closed')
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.router.read()['notices'][wake]['state'], 'uncertain')
+
+    def test_terminal_delivery_cannot_use_an_exhausted_notice_budget(self):
+        self.config['notification_policy'] = {'mode': 'limited', 'limit': 1}
+        self.router = self.restart()
+        self.router.tick(CONNECTION)
+        wake = next(iter(self.router.read()['notices']))
+        self.router.wake(CONNECTION, wake)
+        self.pending = []
+        self.router.wake(CONNECTION, wake, finish=True)
+        self.chat_state = 'closed'
+        self.pending = [dict(protocol='pyros.v1', binding=self.config['binding'], message={'id': 'terminal'})]
+        with self.assertRaisesRegex(Blocked, 'budget exhausted'): self.router.tick(CONNECTION)
+        self.assertEqual(len(self.calls), 1)
+
+    def test_terminal_grace_never_extends_original_finite_deadline(self):
+        observed = time.time()
+        self.config.pop('runtime_policy')
+        self.config['trial_expires_at'] = observed + 10
+        self.router = self.restart()
+        self.chat_state = 'closed'
+        with patch('pantheon_connectors.runtime_policy.time.time', return_value=observed):
+            self.router.tick(CONNECTION)
+        wake = next(iter(self.router.read()['notices']))
+        with patch('pantheon_connectors.runtime_policy.time.time', return_value=observed + 10):
+            with self.assertRaisesRegex(Blocked, 'authorization'):
+                self.router.wake(CONNECTION, wake)
+        self.assertEqual(self.config['trial_expires_at'], observed + 10)
+        self.assertEqual(len(self.calls), 1)
+
+    def test_stopped_receiver_cannot_leave_native_reads_open_past_terminal_grace(self):
+        self.chat_state = 'closed'
+        observed = time.time()
+        with patch('pantheon_connectors.codex_queue.time.time', return_value=observed):
+            self.router.tick(CONNECTION)
+        wake = next(iter(self.router.read()['notices']))
+        with patch.dict(os.environ, CODEX_HOME='/chosen/home'), \
+                patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 60), \
+                patch('pantheon_connectors.native_cli.Onboarding') as service, \
+                patch('pantheon_connectors.native_cli.preflight') as native:
+            with self.assertRaisesRegex(Blocked, 'authorization'):
+                execute(self.config, 'pantheon_chat', {'connection': CONNECTION},
+                        native_thread=THREAD, setup_file=self.setup)
+            value = execute(self.config, 'pantheon_doctor', {}, native_thread=THREAD, setup_file=self.setup)
+            self.assertFalse(value['runtime_authorized'])
+            with patch('pantheon_connectors.codex_queue.Onboarding') as queue_service:
+                value = execute(self.config, 'pantheon_finish_wake',
+                                {'connection': CONNECTION, 'wake_id': wake},
+                                native_thread=THREAD, setup_file=self.setup)
+                self.assertEqual(value['status'], 'connection_fenced')
+                queue_service.return_value.member.assert_not_called()
+            service.return_value.member.assert_not_called()
+            native.assert_not_called()
+        self.assertEqual(self.router.read()['notices'][wake]['state'], 'queue_accepted')
+
+    def test_unverified_closure_does_not_create_terminal_authority(self):
+        for view in (
+            {'role': 'agent', 'member': 'agent', 'chat': {'state': 'closed', 'members': {
+                'agent': {'revoked': True, 'binding': self.config['binding']}}}},
+            {'role': 'agent', 'member': 'agent', 'chat': {'state': 'closed', 'members': {
+                'agent': {'revoked': False, 'binding': {}}}}},
+        ):
+            self.service.member = lambda *_: (None, None, Mock(request=lambda _: view))
+            with self.assertRaises(Blocked): self.router.tick(CONNECTION)
+            self.assertNotIn(CONNECTION, self.router.read().get('closed_observed_at', {}))
+        self.assertEqual(self.calls, [])
 
     def test_expired_finish_is_local_and_does_not_claim_ack_or_cancel(self):
         self.router.tick(CONNECTION)
@@ -217,7 +336,10 @@ class DesktopQueueTests(unittest.TestCase):
         self.router.tick(CONNECTION)
         wake = next(iter(self.router.read()['notices']))
         self.chat_state = 'closed'
-        with patch('pantheon_connectors.codex_watch.Notices', return_value=self.router):
+        self.assertEqual(self.router.tick(CONNECTION), 'idle_or_notice_unresolved')
+        observed = self.router.read()['closed_observed_at'][CONNECTION]
+        with patch('pantheon_connectors.codex_watch.Notices', return_value=self.router), \
+                patch('pantheon_connectors.codex_queue.time.time', return_value=observed + 60):
             run(self.setup, CONNECTION, threading.Event(), report=Mock())
         self.assertFalse(allowed(load_private(self.setup)))
         journal = self.router.read()
@@ -305,8 +427,65 @@ class DesktopQueueTests(unittest.TestCase):
         self.failure = TimeoutError('native outcome unknown')
         with self.assertRaisesRegex(Blocked, 'uncertain'): self.router.tick(CONNECTION)
         self.failure = None
-        with self.assertRaisesRegex(Blocked, 'Unresolved'): self.restart().tick(CONNECTION)
+        with self.assertRaisesRegex(Blocked, 'uncertain'): self.restart().tick(CONNECTION)
         self.assertEqual(len(self.calls), 1)
+
+    def test_receiver_waits_locally_for_native_reconciliation_then_delivers_new_work(self):
+        self.failure = QueueUncertain('native_writer_busy', exit_code=1)
+        reports = []
+        outer = self
+        class Stop:
+            waits = 0
+            def is_set(self): return self.waits >= 4
+            def wait(self, delay):
+                self.waits += 1
+                self.assert_delay = delay
+                if self.waits == 2:
+                    wake = next(iter(outer.router.read()['notices']))
+                    outer.router.wake(CONNECTION, wake)
+                    outer.pending = []
+                    outer.router.wake(CONNECTION, wake, finish=True)
+                    outer.failure = None
+                    outer.pending = [dict(protocol='pyros.v1', binding=outer.config['binding'], message={'id': 'new'})]
+        stop = Stop()
+        with patch('pantheon_connectors.codex_watch.Notices', return_value=self.router), \
+                patch.object(self.router, 'pending', wraps=self.router.pending) as pending:
+            def report(value):
+                reports.append(value)
+                if len(reports) == 1: self.pending_reads = pending.call_count
+                if len(reports) == 2: self.assertEqual(pending.call_count, self.pending_reads)
+            run(self.setup, CONNECTION, stop, report=report)
+        self.assertEqual([r['status'] for r in reports[:3]], ['delivery_uncertain', 'delivery_uncertain', 'queue_accepted_not_received'])
+        self.assertEqual(reports[0]['reason'], 'native_writer_busy')
+        self.assertEqual(len(self.calls), 2)
+        self.assertEqual(stop.assert_delay, 5)
+        self.assertTrue(allowed(load_private(self.setup)))
+
+    def test_uncertain_receiver_still_stops_at_original_deadline(self):
+        self.failure = QueueUncertain('queue_timeout')
+        self.config.pop('runtime_policy')
+        deadline = time.time()+30
+        self.config['trial_expires_at'] = deadline
+        save_private(self.setup, self.config)
+        now = [deadline-10]
+        stop = Mock()
+        stop.is_set.return_value = False
+        stop.wait.side_effect = lambda _: now.__setitem__(0, deadline)
+        with patch('pantheon_connectors.codex_watch.Notices', return_value=self.router), \
+                patch('pantheon_connectors.codex_queue.time.time', side_effect=lambda: now[0]), \
+                patch('pantheon_connectors.lifecycle_status.report_terminal') as report:
+            with self.assertRaises(Blocked): run(self.setup, CONNECTION, stop)
+            self.assertEqual(report.call_args.args[4], str(deadline))
+        self.assertEqual(stop.wait.call_count, 1)
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(load_private(self.setup)['trial_expires_at'], deadline)
+
+    def test_native_begin_restarts_only_this_desktop_receiver(self):
+        server = Server(self.setup); self.addCleanup(server.close)
+        with patch('pantheon_connectors.codex_mcp.execute', return_value={'status': 'draining'}), \
+                patch.object(server, 'start') as start, patch.dict(os.environ, CODEX_HOME='/chosen/home'):
+            server._handle('tools/call', dict(name='pantheon_begin_wake', arguments={'connection': CONNECTION, 'wake_id': 'wake'}, _meta={'threadId': THREAD}))
+            start.assert_called_once_with(CONNECTION)
 
 @unittest.skipUnless(fixtures.product_env('HTTP_TEST_URL'), 'isolated HTTP fixture required')
 class DesktopHTTPTests(unittest.TestCase):

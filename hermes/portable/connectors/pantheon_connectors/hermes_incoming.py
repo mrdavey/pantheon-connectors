@@ -43,6 +43,9 @@ class PermissionRequired(Blocked):
         return {'status': 'blocked', 'reason': str(self),
             'next_action': 'verify_reviewed_host_permission_then_retry_same_scope',
             'host_incoming_permission': 'missing_or_unverified',
+            'command_explanations': {
+                'inspect': 'Check whether Hermes can receive Pantheon updates in this profile.',
+                'enable_only_under_explicit_approval': 'Allow Pantheon to deliver updates to Hermes in this profile; restore the prior setting after the last approved chat.'},
             'native_commands': {
                 'inspect': shlex.join(command(self.profile, 'get', '--json')),
                 'enable_only_under_explicit_approval': shlex.join(command(self.profile, 'set', 'true'))},

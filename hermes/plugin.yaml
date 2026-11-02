@@ -1,5 +1,5 @@
 name: pantheon
-version: 0.5.10
+version: 0.5.12
 description: Scoped Pantheon collaboration with a server-owned tool catalogue and native session-bound delivery.
 author: Pantheon
 requires_hermes: '>=0.21.7, <0.22'

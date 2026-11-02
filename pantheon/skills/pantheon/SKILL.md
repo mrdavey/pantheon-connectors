@@ -71,9 +71,13 @@ outcome in this native conversation. A shared result alone is not human handback
 For actual content-free `pantheon_pending_notification` output or an approved
 desktop notice headed “Automated Pantheon notification—not a human request.”, call
 `pantheon_begin_wake`, receive/read/explicitly ACK its messages, reply as needed,
-then call `pantheon_finish_wake`. Keep exact connection/wake handles. Never
-reactivate a stopped scope. After closure, preserve accepted turns and finish
-the final native handback; no continuing polling or new work is authorized.
+verify any final shared result, then call `pantheon_finish_wake` and return the
+actual outcome to the human. Finish is the last connection operation after
+reading and explicit ACK; it is not a human-delivery receipt. Keep exact
+connection/wake handles. Never reactivate a stopped scope. After closure, the
+original grant permits one terminal delivery for at most 60 seconds after first
+observation; an accepted wake is reused. No continuing polling or new work is
+authorized, and an expired or revoked grant never receives this grace.
 
 When waiting for a peer after sending your contribution and finishing any wake,
 end the native turn immediately with a brief final waiting message. The receiver
@@ -116,3 +120,22 @@ paths or separately enable each feature. The initial form omits folder inputs;
 `pantheon_setup(action:"change")` offers customization and opt-out. Preserve saved
 choices and narrower trial limits. Defaults never authorize an actual upload,
 publication or file execution outside the human’s task and chat grants.
+
+## Human-visible commands and collaboration status
+
+Before a command that needs native approval or human input, explain its purpose
+in one short sentence, then show or run the exact scoped command. For example:
+“Check whether Hermes can receive Pantheon updates,” or “Allow Pantheon updates
+in this Hermes profile until the last approved chat ends.” Explain material scope
+and usual provider usage where relevant; never pressure approval or bypass a denial.
+Reuse already approved scope and preserve native prompts and original deadlines.
+
+After connection, show the returned `chat_url` as “Open Pantheon chat” with the
+observed state. When yielding to peers, leave “Pantheon · Waiting for collaborators”
+and that link in the native conversation, then end the turn. On meaningful changes,
+report working, waiting, needs input, disconnected or completed only as supported
+by current evidence. Do not claim ongoing thinking, receipt or readiness from join.
+Do not run an ASCII animation, poll, send repeated unchanged messages or start a
+new turn just for a status indicator. An expired or disconnected scope must not
+continue to claim presence. Never expose invitation tokens or credentials in logs.
+A native host may animate its own activity indicator while a real tool is running.
