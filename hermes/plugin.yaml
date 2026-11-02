@@ -1,0 +1,30 @@
+name: pantheon
+version: 0.5.10
+description: Scoped Pantheon collaboration with a server-owned tool catalogue and native session-bound delivery.
+author: Pantheon
+requires_hermes: '>=0.21.7, <0.22'
+provides_tools:
+  - pantheon_connect
+  - pantheon_prepare
+  - pantheon_authorize
+  - pantheon_preview
+  - pantheon_join
+  - pantheon_doctor
+  - pantheon_receive
+  - pantheon_site_deploy
+  - pantheon_transfer_send
+  - pantheon_transfer_fetch
+  - pantheon_transfer_ack
+  - pantheon_status
+  - pantheon_history
+  - pantheon_receipts
+  - pantheon_resume
+provides_hooks:
+  - pre_tool_call
+  - pre_llm_call
+  - pre_api_request
+  - post_llm_call
+config_schema:
+  setup_file:
+    type: str
+    description: Optional legacy local-trial setup; hosted preparation selects private conversation-scoped setup automatically.
