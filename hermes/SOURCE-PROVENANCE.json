@@ -1,0 +1,1004 @@
+{
+  "builder_sha256": "e314ceae8924620935347d814b3a8923535cb44a15926112b3ae21bf383d633c",
+  "exclusions": "Server, frontend, deployment tooling, product design and immutable archives stay in the source repository; runtime and safety guidance is in README.md. No scan exclusions or suppression are applied.",
+  "files": {
+    "README.md": {
+      "mode": "100644",
+      "sha256": "8cb18c53a7d1cf07fa8a9f879286e97f80253ced6f3bc2504323c24c27c62268",
+      "source_path": "packaging/HERMES-README.md"
+    },
+    "__init__.py": {
+      "mode": "100644",
+      "sha256": "8fcc86215bd3cf67beb22606dc510b9aed58e275db6c32f96a5c4bd575e4edb9",
+      "source_path": "__init__.py"
+    },
+    "broker-package.json": {
+      "mode": "100644",
+      "sha256": "dbf92f15c42f0d8224d0501c5d623e996853444ee9c8b02a81ffa57870320941",
+      "source_path": "packaging/HERMES-BROKER-package.json"
+    },
+    "codex-ui/panel.html": {
+      "mode": "100644",
+      "sha256": "1991141aa9af020729a0505e97310d63ddbe2b84cbd07f66bce7af4f956f4241",
+      "source_path": "codex-ui/panel.html"
+    },
+    "codex-ui/panel.js": {
+      "mode": "100644",
+      "sha256": "271fcc2c96d3321660a0ecc6b0835a1096fda779db7d9cb784d4ddd7dcbcd182",
+      "source_path": "codex-ui/panel.js"
+    },
+    "connectors/pantheon_connectors/__init__.py": {
+      "mode": "100644",
+      "sha256": "782b2947b9c5ee7e8eb43b41ccd325fad7d3b3945b044baa0ce7639f35cba6a9",
+      "source_path": "connectors/pantheon_connectors/__init__.py"
+    },
+    "connectors/pantheon_connectors/broker/__init__.py": {
+      "mode": "100644",
+      "sha256": "50e79555706fcabf530f4f5190e05b9d939bb6fc8e6d3b8a842b6cfcaa589010",
+      "source_path": "connectors/pantheon_connectors/broker/__init__.py"
+    },
+    "connectors/pantheon_connectors/broker/adapter.py": {
+      "mode": "100644",
+      "sha256": "56b2be9d0bc0cec3fecc65b8104dea120919ce86119cd5988d337576fc07100d",
+      "source_path": "connectors/pantheon_connectors/broker/adapter.py"
+    },
+    "connectors/pantheon_connectors/broker/bootstrap.py": {
+      "mode": "100644",
+      "sha256": "f67e21577fa0184921faf770cb9543226bc668b44c46be2ea1ab14df926a8e0c",
+      "source_path": "connectors/pantheon_connectors/broker/bootstrap.py"
+    },
+    "connectors/pantheon_connectors/broker/catalog.py": {
+      "mode": "100644",
+      "sha256": "2fa42d013f5ba86d05899e94450bbdcf320cb5af528eff77bfa898572f414a93",
+      "source_path": "connectors/pantheon_connectors/broker/catalog.py"
+    },
+    "connectors/pantheon_connectors/broker/client.py": {
+      "mode": "100644",
+      "sha256": "86ee6e88e63b73656df797d24a1873853ff34ff9134cfd10e12bf0ecd27a55dd",
+      "source_path": "connectors/pantheon_connectors/broker/client.py"
+    },
+    "connectors/pantheon_connectors/broker/codex_setup_policy.py": {
+      "mode": "100644",
+      "sha256": "0082aa1ffc3ca0ddc4dab582a4c301a713a53ceadcdfdc66f78d047676b6f272",
+      "source_path": "connectors/pantheon_connectors/broker/codex_setup_policy.py"
+    },
+    "connectors/pantheon_connectors/broker/codex_trust.py": {
+      "mode": "100644",
+      "sha256": "895616d4c6eb51ebae65df19c08e1a1023a22d81105811d232d38e2a29371594",
+      "source_path": "connectors/pantheon_connectors/broker/codex_trust.py"
+    },
+    "connectors/pantheon_connectors/broker/connect.py": {
+      "mode": "100644",
+      "sha256": "90f4817bbb11163b3031cca067df9c8f7942e3ffb652d9243e0cfa44d4876d63",
+      "source_path": "connectors/pantheon_connectors/broker/connect.py"
+    },
+    "connectors/pantheon_connectors/broker/hermes_live.py": {
+      "mode": "100644",
+      "sha256": "08dc0f147331702b9a53a1ed650c88c02def04a7ff6734e958cca171dd52993d",
+      "source_path": "connectors/pantheon_connectors/broker/hermes_live.py"
+    },
+    "connectors/pantheon_connectors/broker/package.py": {
+      "mode": "100644",
+      "sha256": "2da75de1d4104e0c0d9148b4cac292e0f62e915aec48d1ba75ee0b7dc6e9910b",
+      "source_path": "connectors/pantheon_connectors/broker/package.py"
+    },
+    "connectors/pantheon_connectors/broker/permission_contract.py": {
+      "mode": "100644",
+      "sha256": "1141a9d270e37d0d45214a4485ba48aebea8bc5a8b8fc7bd167612359dc5ca1b",
+      "source_path": "connectors/pantheon_connectors/broker/permission_contract.py"
+    },
+    "connectors/pantheon_connectors/broker/permissions.json": {
+      "mode": "100644",
+      "sha256": "e3eeabf1d0de1d923faf2cfcdc41efc51b5fa7223ba9671d03f36595d3ddfe9a",
+      "source_path": "connectors/pantheon_connectors/broker/permissions.json"
+    },
+    "connectors/pantheon_connectors/broker/transport.py": {
+      "mode": "100644",
+      "sha256": "a990aff4c56db185543af9d0357fa8ea87bb33700f0431d9b63eba6b8d17f2e4",
+      "source_path": "connectors/pantheon_connectors/broker/transport.py"
+    },
+    "connectors/pantheon_connectors/claude_channel.py": {
+      "mode": "100644",
+      "sha256": "c55056e43548d9ea9542a6168ea72c9a76021eeb4e7a776d476d8aa4eff2581a",
+      "source_path": "connectors/pantheon_connectors/claude_channel.py"
+    },
+    "connectors/pantheon_connectors/claude_mcp.py": {
+      "mode": "100644",
+      "sha256": "52a7de625e8e1b881ddc0434b087ed64da1d64ff3f050b680ed53e886fc8ae47",
+      "source_path": "connectors/pantheon_connectors/claude_mcp.py"
+    },
+    "connectors/pantheon_connectors/claude_native.py": {
+      "mode": "100644",
+      "sha256": "b85dc77e205ea386946b8ca127737c32ddbabdc3e76b9df3881597d49bbb3974",
+      "source_path": "connectors/pantheon_connectors/claude_native.py"
+    },
+    "connectors/pantheon_connectors/cli.py": {
+      "mode": "100644",
+      "sha256": "8a91848a201b0c226e93e2a0dd325e05f7968b58f08de8106115452660dd61e4",
+      "source_path": "connectors/pantheon_connectors/cli.py"
+    },
+    "connectors/pantheon_connectors/client.py": {
+      "mode": "100644",
+      "sha256": "963f511849e985831011ef3415f7027256965f6d9b40c76acc82066e79649313",
+      "source_path": "connectors/pantheon_connectors/client.py"
+    },
+    "connectors/pantheon_connectors/codex.py": {
+      "mode": "100644",
+      "sha256": "8a58ed68ae9f256a8c1bfa8e3a741cdcdf17246f6bb19dcbdc540d23d34dc319",
+      "source_path": "connectors/pantheon_connectors/codex.py"
+    },
+    "connectors/pantheon_connectors/codex_audit.py": {
+      "mode": "100644",
+      "sha256": "b8c1110b29a28c1c978143c530947c795f5f2e98964d45ac9fbe764fa3d6e93a",
+      "source_path": "connectors/pantheon_connectors/codex_audit.py"
+    },
+    "connectors/pantheon_connectors/codex_compatibility.py": {
+      "mode": "100644",
+      "sha256": "0fa2e53f1c26121e119b3a5d2901f57bfef82a84cd8eef126161f423ed481b7f",
+      "source_path": "connectors/pantheon_connectors/codex_compatibility.py"
+    },
+    "connectors/pantheon_connectors/codex_daemon.py": {
+      "mode": "100644",
+      "sha256": "4040e99aef12441f599879270502ca498f3c2af1a02bc69c792f2691750ddc45",
+      "source_path": "connectors/pantheon_connectors/codex_daemon.py"
+    },
+    "connectors/pantheon_connectors/codex_delivery.py": {
+      "mode": "100644",
+      "sha256": "047f77a62c996475a192f51bb4a1ef9006598cb70babc3f1d83f731bfc55e024",
+      "source_path": "connectors/pantheon_connectors/codex_delivery.py"
+    },
+    "connectors/pantheon_connectors/codex_hosted.py": {
+      "mode": "100644",
+      "sha256": "9713994fb347b6ae8bf1995df0b2ef4e6cbc28827c4eb426fd82b9f3c241d4e1",
+      "source_path": "connectors/pantheon_connectors/codex_hosted.py"
+    },
+    "connectors/pantheon_connectors/codex_mcp.py": {
+      "mode": "100644",
+      "sha256": "2ff47a807a4b4955ec125abc42fbd7d9a516434b2e2bcf6f763864d238b42baf",
+      "source_path": "connectors/pantheon_connectors/codex_mcp.py"
+    },
+    "connectors/pantheon_connectors/codex_output.py": {
+      "mode": "100644",
+      "sha256": "d6cc015a0c4b0d98188c9c639996257559f75f94a19db96ac22f5e303153f246",
+      "source_path": "connectors/pantheon_connectors/codex_output.py"
+    },
+    "connectors/pantheon_connectors/codex_output_watch.py": {
+      "mode": "100644",
+      "sha256": "13a9c1883d733ad7fd56b6bd2960f7ea1559b22a579c9a0625f79107373ecb56",
+      "source_path": "connectors/pantheon_connectors/codex_output_watch.py"
+    },
+    "connectors/pantheon_connectors/codex_panel.py": {
+      "mode": "100644",
+      "sha256": "6977d2b6ef12dc55b80308e114da9e61da4bdf74a54ce711717be3af49dfb3e4",
+      "source_path": "connectors/pantheon_connectors/codex_panel.py"
+    },
+    "connectors/pantheon_connectors/codex_queue.py": {
+      "mode": "100644",
+      "sha256": "9c4d45745ff3af30591ee63e88f5d202a05e207b8e4ab91c65bbe0e0e7dcf504",
+      "source_path": "connectors/pantheon_connectors/codex_queue.py"
+    },
+    "connectors/pantheon_connectors/codex_setup.py": {
+      "mode": "100644",
+      "sha256": "26b14372a2267517ee846c3f6ef29e3d8c41d179a82613180474d39e7024d2e7",
+      "source_path": "connectors/pantheon_connectors/codex_setup.py"
+    },
+    "connectors/pantheon_connectors/codex_wait.py": {
+      "mode": "100644",
+      "sha256": "52c93cad8c4dc0748ac6ddeb65262cea92f013c5c39b6bf176757e7ff6e7007a",
+      "source_path": "connectors/pantheon_connectors/codex_wait.py"
+    },
+    "connectors/pantheon_connectors/codex_watch.py": {
+      "mode": "100644",
+      "sha256": "b1875d9eff93653a0a98bee70c828ac97e30360be1c1ea5619d74952ba3ea119",
+      "source_path": "connectors/pantheon_connectors/codex_watch.py"
+    },
+    "connectors/pantheon_connectors/environment.py": {
+      "mode": "100644",
+      "sha256": "4681943a99805906b9793a0a2f83b9c48f5b3ae91cce39fc83da4584df01d33b",
+      "source_path": "connectors/pantheon_connectors/environment.py"
+    },
+    "connectors/pantheon_connectors/feature_defaults.py": {
+      "mode": "100644",
+      "sha256": "91829b46357156f75f92d967e9f9665076b43ed14610b2977f97c8bbdc5afa73",
+      "source_path": "connectors/pantheon_connectors/feature_defaults.py"
+    },
+    "connectors/pantheon_connectors/hermes.py": {
+      "mode": "100644",
+      "sha256": "c0d7afc08c81b52bfdcc13839c25d54b186122f93540cb0e14986d0d6bb70c77",
+      "source_path": "connectors/pantheon_connectors/hermes.py"
+    },
+    "connectors/pantheon_connectors/hermes_audit.py": {
+      "mode": "100644",
+      "sha256": "2d2401ebfad8b1c4b512b730a27896828e5475cf247f41584d3302030038b46f",
+      "source_path": "connectors/pantheon_connectors/hermes_audit.py"
+    },
+    "connectors/pantheon_connectors/hermes_incoming.py": {
+      "mode": "100644",
+      "sha256": "6bb6ba00f6e1f2a2d7260b254757e29936a20dbeedd58ef04d1270fbea8c9105",
+      "source_path": "connectors/pantheon_connectors/hermes_incoming.py"
+    },
+    "connectors/pantheon_connectors/hermes_limits.py": {
+      "mode": "100644",
+      "sha256": "5bc78b68e25c290477e90d2845296fd0eaf0116e36aa6379f229b6cb69697eca",
+      "source_path": "connectors/pantheon_connectors/hermes_limits.py"
+    },
+    "connectors/pantheon_connectors/hermes_plugin.py": {
+      "mode": "100644",
+      "sha256": "3625b1c7b76f386e178464feb0fb42d9b9265c1d80a4c2fda70fdefbb24c4f2a",
+      "source_path": "connectors/pantheon_connectors/hermes_plugin.py"
+    },
+    "connectors/pantheon_connectors/hermes_review.py": {
+      "mode": "100644",
+      "sha256": "9b429f02ad7ae37226d820e695da44d32a3c9b860175b8a137d2544259ecd05c",
+      "source_path": "connectors/pantheon_connectors/hermes_review.py"
+    },
+    "connectors/pantheon_connectors/hermes_setup.py": {
+      "mode": "100644",
+      "sha256": "d810608338828e00d1aa8fe8f36c042b4aec77e2734941480b832c3fce1ea895",
+      "source_path": "connectors/pantheon_connectors/hermes_setup.py"
+    },
+    "connectors/pantheon_connectors/hermes_tools.py": {
+      "mode": "100644",
+      "sha256": "c4e8f77fa3eeb96eef49c0708acee29b858fd4c9bcb7a924df806e019fca0ab8",
+      "source_path": "connectors/pantheon_connectors/hermes_tools.py"
+    },
+    "connectors/pantheon_connectors/hosted_discovery.py": {
+      "mode": "100644",
+      "sha256": "6c77ffa654174381fe8828ecca461b5bd583ea8b9fc687f56617d70ee6286a1f",
+      "source_path": "connectors/pantheon_connectors/hosted_discovery.py"
+    },
+    "connectors/pantheon_connectors/hosted_v3.py": {
+      "mode": "100644",
+      "sha256": "66eb044953728ab499b45447a2c45e969460365dcb1b3c327a93a35ea41174de",
+      "source_path": "connectors/pantheon_connectors/hosted_v3.py"
+    },
+    "connectors/pantheon_connectors/invitations.py": {
+      "mode": "100644",
+      "sha256": "105a990b6c20b10dd5e2da4c5adbe2a1b98f92d4888f5dc9ae270694737b70ae",
+      "source_path": "connectors/pantheon_connectors/invitations.py"
+    },
+    "connectors/pantheon_connectors/lifecycle_status.py": {
+      "mode": "100644",
+      "sha256": "de5072ba1c959ad4eb29411ef9cd33be975227a93510c83ceb2936f120c46b34",
+      "source_path": "connectors/pantheon_connectors/lifecycle_status.py"
+    },
+    "connectors/pantheon_connectors/mcp.py": {
+      "mode": "100644",
+      "sha256": "6ebce52c53040a5bd3c05cd000920d28871c332ce93540ea185de1670f39854a",
+      "source_path": "connectors/pantheon_connectors/mcp.py"
+    },
+    "connectors/pantheon_connectors/mcp_elicitation.py": {
+      "mode": "100644",
+      "sha256": "dd6821b77fa486d82bfe3f726960f9a0210bf28246d7b4f4a930ed58452f899f",
+      "source_path": "connectors/pantheon_connectors/mcp_elicitation.py"
+    },
+    "connectors/pantheon_connectors/native_cli.py": {
+      "mode": "100644",
+      "sha256": "43b730dd20add35a6ecf2a33ff61c20c7de14caf741b4ca017716c18dccdfd34",
+      "source_path": "connectors/pantheon_connectors/native_cli.py"
+    },
+    "connectors/pantheon_connectors/notification_policy.py": {
+      "mode": "100644",
+      "sha256": "2abde07c9a7b1d05c05c549c056ba7f220b728b6bd6d1808f0c0c9fe7f046617",
+      "source_path": "connectors/pantheon_connectors/notification_policy.py"
+    },
+    "connectors/pantheon_connectors/onboarding.py": {
+      "mode": "100644",
+      "sha256": "c5c000924e1322c9d32e5902d1cbc189fee7994b0c49c2fffb99a648b35714dd",
+      "source_path": "connectors/pantheon_connectors/onboarding.py"
+    },
+    "connectors/pantheon_connectors/operational.py": {
+      "mode": "100644",
+      "sha256": "c6fdfd747c2208b4406a29a0617c7bdafbdbc0afcd8381f5a22ad7e7503f6542",
+      "source_path": "connectors/pantheon_connectors/operational.py"
+    },
+    "connectors/pantheon_connectors/read_retry.py": {
+      "mode": "100644",
+      "sha256": "cfb1695110a85e85a017b8fde47be6e0a388d26cac341d2e7fa54bcf0c4668ec",
+      "source_path": "connectors/pantheon_connectors/read_retry.py"
+    },
+    "connectors/pantheon_connectors/receiver_lifecycle.py": {
+      "mode": "100644",
+      "sha256": "8801a9d5221196198e09c553f26bfc55b0da90bb34b93abb8d8e2b8fb926e369",
+      "source_path": "connectors/pantheon_connectors/receiver_lifecycle.py"
+    },
+    "connectors/pantheon_connectors/runtime_policy.py": {
+      "mode": "100644",
+      "sha256": "abfbf357f3eec5b575a7791805c908f809585238f71a424454ff0907dda83147",
+      "source_path": "connectors/pantheon_connectors/runtime_policy.py"
+    },
+    "connectors/pantheon_connectors/setup_timing.py": {
+      "mode": "100644",
+      "sha256": "987dcda193fb520ba7867dfa0785cda854abb32f93017d0dda5e413bfbabd00c",
+      "source_path": "connectors/pantheon_connectors/setup_timing.py"
+    },
+    "connectors/pantheon_connectors/sites.py": {
+      "mode": "100644",
+      "sha256": "703db775f9e5da0c65fdc593ebeb7cf70fbefd9ea4406ab21e23a672a9c0f4a8",
+      "source_path": "connectors/pantheon_connectors/sites.py"
+    },
+    "connectors/pantheon_connectors/skills/collaborate/SKILL.md": {
+      "mode": "100644",
+      "sha256": "854a7e73fe20cfdd6e94c38c89dcc8937831ba3d9108f510d43b0396c0dfba5c",
+      "source_path": "connectors/pantheon_connectors/skills/collaborate/SKILL.md"
+    },
+    "connectors/pantheon_connectors/state.py": {
+      "mode": "100644",
+      "sha256": "80d5181080fe8fbeaa70e27302b591e02e0cb1d1c0088d7972c542e228fe863b",
+      "source_path": "connectors/pantheon_connectors/state.py"
+    },
+    "connectors/pantheon_connectors/terminal_cleanup.py": {
+      "mode": "100644",
+      "sha256": "d12923a0a548c7d83adc70f874c5f9a41d90074ce25f6398514b8f05f2a0acd1",
+      "source_path": "connectors/pantheon_connectors/terminal_cleanup.py"
+    },
+    "connectors/pantheon_connectors/tls.py": {
+      "mode": "100644",
+      "sha256": "1f34100b8a07318823b9707134f359d961aa5e8c46eaca0c1990afcf08d0c5b9",
+      "source_path": "connectors/pantheon_connectors/tls.py"
+    },
+    "connectors/pantheon_connectors/transfers.py": {
+      "mode": "100644",
+      "sha256": "36a2cc5e9f317e32f118fb6341f9f9097edac684361c95ad7c5f437de71a6360",
+      "source_path": "connectors/pantheon_connectors/transfers.py"
+    },
+    "connectors/pantheon_connectors/version.py": {
+      "mode": "100644",
+      "sha256": "5764e92d09747d66d3d4577c94d534edd279f743120bf9259783e1afcfceef44",
+      "source_path": "connectors/pantheon_connectors/version.py"
+    },
+    "connectors/pantheon_connectors/worker.py": {
+      "mode": "100644",
+      "sha256": "dfefde154bc41c97a1530b6b1cccfe9e1ff9a1a639a7685ac93d9abfac7a1295",
+      "source_path": "connectors/pantheon_connectors/worker.py"
+    },
+    "connectors/requirements-codex.txt": {
+      "mode": "100644",
+      "sha256": "89391ba2b7b3c484317a6e3e6d663af2436d202bbd0884585d9da9ef93619eb8",
+      "source_path": "connectors/requirements-codex.txt"
+    },
+    "connectors/tests/broker_http_probe.py": {
+      "mode": "100644",
+      "sha256": "8fe7cbf98576909f282d6f7775ae0273a7ca5a9d42a001a541f299a39cfe130b",
+      "source_path": "connectors/tests/broker_http_probe.py"
+    },
+    "connectors/tests/fixtures/command-permission-0.9.2.json": {
+      "mode": "100644",
+      "sha256": "d8de5447dbcb8abbe17ce1983c4f219b924f66a2b680f0c12c5a1cd994c2a2dc",
+      "source_path": "connectors/tests/fixtures/command-permission-0.9.2.json"
+    },
+    "connectors/tests/fixtures/tool-catalog-v1.json": {
+      "mode": "100644",
+      "sha256": "e77358c7be1d32aa843e486fef02798de4ad29eeef6651a5da63e24bd8be2fde",
+      "source_path": "connectors/tests/fixtures/tool-catalog-v1.json"
+    },
+    "connectors/tests/test_broker.py": {
+      "mode": "100644",
+      "sha256": "882ba7cc05063ebf5398cc6f1b3689953ec8b1151011f4f4181eedb01180db54",
+      "source_path": "connectors/tests/test_broker.py"
+    },
+    "connectors/tests/test_broker_bootstrap.py": {
+      "mode": "100644",
+      "sha256": "392edb98a4ecfb47e9c2510bd509e845eeaf3a2f63c0e148bd1ae745278a1fa2",
+      "source_path": "connectors/tests/test_broker_bootstrap.py"
+    },
+    "connectors/tests/test_claude_channel.py": {
+      "mode": "100644",
+      "sha256": "4d0dabe7c999af650b8dcc0c0e5bd7c82d109f6fd7ed7179f9f7fbdb022447ee",
+      "source_path": "connectors/tests/test_claude_channel.py"
+    },
+    "connectors/tests/test_codex_audit.py": {
+      "mode": "100644",
+      "sha256": "413f39ba1a59dcdceccc73c005c54672ef773de98b93356f89a1c92012e3125f",
+      "source_path": "connectors/tests/test_codex_audit.py"
+    },
+    "connectors/tests/test_codex_compatibility.py": {
+      "mode": "100644",
+      "sha256": "00e394f520f27fc5731377f548bf0514e804dabfefd605b9a05fbcaa44c47ee3",
+      "source_path": "connectors/tests/test_codex_compatibility.py"
+    },
+    "connectors/tests/test_codex_daemon.py": {
+      "mode": "100644",
+      "sha256": "a5654e42636c467ca5c4f30932c05608146a4c1ed87ba9d291309455c114de48",
+      "source_path": "connectors/tests/test_codex_daemon.py"
+    },
+    "connectors/tests/test_codex_desktop.py": {
+      "mode": "100644",
+      "sha256": "72154788c1e7d046829a20679b8ad9442d5c8fa78f9e72e74f6ca1ca22a1b997",
+      "source_path": "connectors/tests/test_codex_desktop.py"
+    },
+    "connectors/tests/test_codex_hosted.py": {
+      "mode": "100644",
+      "sha256": "a155c13ebfe9b85ad02aed2cd723368aa96b187943ab1a4fc8b6bf1791bf55ee",
+      "source_path": "connectors/tests/test_codex_hosted.py"
+    },
+    "connectors/tests/test_codex_output.py": {
+      "mode": "100644",
+      "sha256": "0df14a7e5809a4b1842df15d1047e3e992185f9760cc745bc2ea2c70264ae34c",
+      "source_path": "connectors/tests/test_codex_output.py"
+    },
+    "connectors/tests/test_codex_output_adversarial.py": {
+      "mode": "100644",
+      "sha256": "090e61cc2b294b1ca850df38d9ce3cf1e5981eab58c73f83bcc404b4f3501386",
+      "source_path": "connectors/tests/test_codex_output_adversarial.py"
+    },
+    "connectors/tests/test_codex_queue.py": {
+      "mode": "100644",
+      "sha256": "e36a6b126f025300d556d7b02b9c4c702f1a6537ad48ac6f368ddc75107e6da7",
+      "source_path": "connectors/tests/test_codex_queue.py"
+    },
+    "connectors/tests/test_codex_setup_connect.py": {
+      "mode": "100644",
+      "sha256": "ba55c22222139515dfed90109082144f92e3facbb13de55723c37c2fe86b11d8",
+      "source_path": "connectors/tests/test_codex_setup_connect.py"
+    },
+    "connectors/tests/test_codex_setup_policy.py": {
+      "mode": "100644",
+      "sha256": "42396ad88c1fb06529e223ff67621bdba4d901fd235dbfeb5d966946d10a8d0c",
+      "source_path": "connectors/tests/test_codex_setup_policy.py"
+    },
+    "connectors/tests/test_codex_trust.py": {
+      "mode": "100644",
+      "sha256": "6eb1ccead72ac7c0137a7711c4d535f792102b257a1d985f53e9689a388eeb6a",
+      "source_path": "connectors/tests/test_codex_trust.py"
+    },
+    "connectors/tests/test_codex_wait.py": {
+      "mode": "100644",
+      "sha256": "ff6309629473e9bf52a8e79f192c2836629d36bffd74a0d6e482eace8f4fab7d",
+      "source_path": "connectors/tests/test_codex_wait.py"
+    },
+    "connectors/tests/test_completion_compatibility.py": {
+      "mode": "100644",
+      "sha256": "e61152424133939a116dc138a91ca652220db0da412824e9ddceb8007fce2d1b",
+      "source_path": "connectors/tests/test_completion_compatibility.py"
+    },
+    "connectors/tests/test_conformance.py": {
+      "mode": "100644",
+      "sha256": "86ff90c75cddd2f1eff61a4e10de6eec08a622a7c85628a0a9a216e4324b6701",
+      "source_path": "connectors/tests/test_conformance.py"
+    },
+    "connectors/tests/test_connect.py": {
+      "mode": "100644",
+      "sha256": "8907b011670aec66b1ba057d44d46e42aa6eb58a0013f6fa4fdc028117d85ffe",
+      "source_path": "connectors/tests/test_connect.py"
+    },
+    "connectors/tests/test_connector_recovery.py": {
+      "mode": "100644",
+      "sha256": "fdcb288aa51bb48b6771876b8fd8221b420e80c0ea89472d99e95f94873455e2",
+      "source_path": "connectors/tests/test_connector_recovery.py"
+    },
+    "connectors/tests/test_environment.py": {
+      "mode": "100644",
+      "sha256": "c5197f23e1a8c899cebccdb069601ffa35cb5071f6e3bc90b9c0d5fb61ca692a",
+      "source_path": "connectors/tests/test_environment.py"
+    },
+    "connectors/tests/test_guidance.py": {
+      "mode": "100644",
+      "sha256": "1baa1f13c47f29da962370cfcef36d4d4a568e4877d08556e7d08f1a5d2e1fff",
+      "source_path": "connectors/tests/test_guidance.py"
+    },
+    "connectors/tests/test_hermes_audit.py": {
+      "mode": "100644",
+      "sha256": "35de7773f5b892504073a9aaec7c5e29d887f3d1ebf54c038f4b32f13daf8114",
+      "source_path": "connectors/tests/test_hermes_audit.py"
+    },
+    "connectors/tests/test_hermes_connection_runtime.py": {
+      "mode": "100644",
+      "sha256": "2e4dea84219aa475493acc5cac5758d34db76650d8ef953fc10aa18e60f370ca",
+      "source_path": "connectors/tests/test_hermes_connection_runtime.py"
+    },
+    "connectors/tests/test_hermes_duration_default.py": {
+      "mode": "100644",
+      "sha256": "ec0d0d8a448faacae227e28562df27ff7b405a12327beaeaa1f6ecfd338ebd7a",
+      "source_path": "connectors/tests/test_hermes_duration_default.py"
+    },
+    "connectors/tests/test_hermes_hosted_setup.py": {
+      "mode": "100644",
+      "sha256": "eb6b6f1f9edc1b15754337c14256d4188b02980bcfe182d89689fddbe275c1c1",
+      "source_path": "connectors/tests/test_hermes_hosted_setup.py"
+    },
+    "connectors/tests/test_hermes_incoming.py": {
+      "mode": "100644",
+      "sha256": "ae4bee432f2bdbb24b03714204e7fc239ea9ac08e2cb3f8938f857e2cd8e1ad9",
+      "source_path": "connectors/tests/test_hermes_incoming.py"
+    },
+    "connectors/tests/test_hermes_limits.py": {
+      "mode": "100644",
+      "sha256": "872fcd9633d9d98e837319498724e2091528264d43492741c27f623c18529bd8",
+      "source_path": "connectors/tests/test_hermes_limits.py"
+    },
+    "connectors/tests/test_hermes_live.py": {
+      "mode": "100644",
+      "sha256": "6930c01c1c6d7fcee9ba5792b5375a30707a4bb08b91a2a575a9b920a6f4ef30",
+      "source_path": "connectors/tests/test_hermes_live.py"
+    },
+    "connectors/tests/test_hermes_notification_contract.py": {
+      "mode": "100644",
+      "sha256": "e9248d2bd2988fcd85fbc4c9445315e3045184d50032852b427fa775071cbea0",
+      "source_path": "connectors/tests/test_hermes_notification_contract.py"
+    },
+    "connectors/tests/test_hermes_peer_tools.py": {
+      "mode": "100644",
+      "sha256": "584764660c304503049cace301f317cf7c3d97eba5b32db16109a7592bf46aeb",
+      "source_path": "connectors/tests/test_hermes_peer_tools.py"
+    },
+    "connectors/tests/test_hermes_prompt_flow.py": {
+      "mode": "100644",
+      "sha256": "8aa4af338b494626ccdc448315f43994d569d9cc7245eb3ca1f98388befecab1",
+      "source_path": "connectors/tests/test_hermes_prompt_flow.py"
+    },
+    "connectors/tests/test_hermes_registration.py": {
+      "mode": "100644",
+      "sha256": "41bd4c3ca6b06718cc74bb7a04861469d2cccca969d2c3b3518af7088f1bf6b5",
+      "source_path": "connectors/tests/test_hermes_registration.py"
+    },
+    "connectors/tests/test_hermes_terminal_cleanup.py": {
+      "mode": "100644",
+      "sha256": "c7e8e1a5fa1d88597bddfb4ef241c847135a572550c7f666309bcd56e806cffb",
+      "source_path": "connectors/tests/test_hermes_terminal_cleanup.py"
+    },
+    "connectors/tests/test_hermes_terminal_notice.py": {
+      "mode": "100644",
+      "sha256": "c8fe27e380cd89adaec27dba653936593348bfbeddb1f5a563ebeb844fda6c4b",
+      "source_path": "connectors/tests/test_hermes_terminal_notice.py"
+    },
+    "connectors/tests/test_hosted_discovery.py": {
+      "mode": "100644",
+      "sha256": "f59dec2da40117f97e7ee9b3e611bd978dc7ae759cfeec79ef1e75b9ae973e6a",
+      "source_path": "connectors/tests/test_hosted_discovery.py"
+    },
+    "connectors/tests/test_hosted_v3.py": {
+      "mode": "100644",
+      "sha256": "22c423ef06c10b6481549ab9167e28913e26e69e8a5b72010bde3c3434e73ce2",
+      "source_path": "connectors/tests/test_hosted_v3.py"
+    },
+    "connectors/tests/test_http_integration.py": {
+      "mode": "100644",
+      "sha256": "9e990e34717e080016862cc31caae3a3ef98fe4287bd537c017cdd06d4853c08",
+      "source_path": "connectors/tests/test_http_integration.py"
+    },
+    "connectors/tests/test_inspection_browser_link.py": {
+      "mode": "100644",
+      "sha256": "bf843f820767bf02f44557292fa8c0141ebef9a504f3aca5701e0c90e36d1211",
+      "source_path": "connectors/tests/test_inspection_browser_link.py"
+    },
+    "connectors/tests/test_invitations.py": {
+      "mode": "100644",
+      "sha256": "7464babd8321e55a7f82cb5414ea33f8b47449f6330027885a397878d8e8e75f",
+      "source_path": "connectors/tests/test_invitations.py"
+    },
+    "connectors/tests/test_lifecycle_status.py": {
+      "mode": "100644",
+      "sha256": "c30d2dbcdba95b592bee2db43b8f38276d0e4935b6959ed3c08a8ccf28d040c6",
+      "source_path": "connectors/tests/test_lifecycle_status.py"
+    },
+    "connectors/tests/test_mcp_elicitation.py": {
+      "mode": "100644",
+      "sha256": "210cfef12f2fa1a6fe263a2593c7eeea66ab8131cae60dc9f0a543bac1bd60b8",
+      "source_path": "connectors/tests/test_mcp_elicitation.py"
+    },
+    "connectors/tests/test_native_onboarding.py": {
+      "mode": "100644",
+      "sha256": "047b5a079d50733474121b1cd2164fe13ec4203ef47ef27582bad80ed735b29c",
+      "source_path": "connectors/tests/test_native_onboarding.py"
+    },
+    "connectors/tests/test_notification_policy.py": {
+      "mode": "100644",
+      "sha256": "13f0a7e51e3c9f59a0f4e6d6463aac102da199c2d332f18257bed85b09d870f9",
+      "source_path": "connectors/tests/test_notification_policy.py"
+    },
+    "connectors/tests/test_operational.py": {
+      "mode": "100644",
+      "sha256": "e89bf74906628cc223225690ffa27b5dc1ca888477615084648cdde593081eb9",
+      "source_path": "connectors/tests/test_operational.py"
+    },
+    "connectors/tests/test_provider_recovery.py": {
+      "mode": "100644",
+      "sha256": "68a88be69ff3c46b72975123d9710288584d0df9a255f33ee74c5b4e0128b484",
+      "source_path": "connectors/tests/test_provider_recovery.py"
+    },
+    "connectors/tests/test_receiver_lifecycle.py": {
+      "mode": "100644",
+      "sha256": "83f759f2ae9236bd5b17dad8bca688d3b68562d54004b3359455b07628316e16",
+      "source_path": "connectors/tests/test_receiver_lifecycle.py"
+    },
+    "connectors/tests/test_recovery_http.py": {
+      "mode": "100644",
+      "sha256": "c276830e19a99896b346810371d5970a13c8e457a552fe9bded46c8a4eb21869",
+      "source_path": "connectors/tests/test_recovery_http.py"
+    },
+    "connectors/tests/test_runtime_policy.py": {
+      "mode": "100644",
+      "sha256": "530799ad5607dd79b32c660f4399257e659d2dfc262882f6a4788dd5a6e23dc7",
+      "source_path": "connectors/tests/test_runtime_policy.py"
+    },
+    "connectors/tests/test_setup_timing.py": {
+      "mode": "100644",
+      "sha256": "0d4193a12611885cc5b1f6d5850462ec300788ada407ca571e003f711503022c",
+      "source_path": "connectors/tests/test_setup_timing.py"
+    },
+    "connectors/tests/test_sites.py": {
+      "mode": "100644",
+      "sha256": "3425a719ee7d0a2dc3425341b14fa918fbb0c56252ccb3a50585f9fe88bbc67e",
+      "source_path": "connectors/tests/test_sites.py"
+    },
+    "connectors/tests/test_tls.py": {
+      "mode": "100644",
+      "sha256": "f242cdf3619fadbc66fef64ae1844296a1070eccaee7736b38db44a3aff3a931",
+      "source_path": "connectors/tests/test_tls.py"
+    },
+    "connectors/tests/test_transfer_http.py": {
+      "mode": "100644",
+      "sha256": "debf110a33dcd67a9073f627305af1628f51eca891801ac86d57b11d5c941e64",
+      "source_path": "connectors/tests/test_transfer_http.py"
+    },
+    "connectors/tests/test_transfers.py": {
+      "mode": "100644",
+      "sha256": "a093bbad48975e75c1d894b16056727a8062129f5b863bc1430942f9a41a54a1",
+      "source_path": "connectors/tests/test_transfers.py"
+    },
+    "plugin.yaml": {
+      "mode": "100644",
+      "sha256": "2b4e2ade893f2d880f77b62d92162465dde75be3dbb8175fda58cb6f7809ab22",
+      "source_path": "packaging/HERMES-BROKER-plugin.yaml"
+    },
+    "portable/connectors/pantheon_connectors/__init__.py": {
+      "mode": "100644",
+      "sha256": "782b2947b9c5ee7e8eb43b41ccd325fad7d3b3945b044baa0ce7639f35cba6a9",
+      "source_path": "connectors/pantheon_connectors/__init__.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/__init__.py": {
+      "mode": "100644",
+      "sha256": "50e79555706fcabf530f4f5190e05b9d939bb6fc8e6d3b8a842b6cfcaa589010",
+      "source_path": "connectors/pantheon_connectors/broker/__init__.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/adapter.py": {
+      "mode": "100644",
+      "sha256": "56b2be9d0bc0cec3fecc65b8104dea120919ce86119cd5988d337576fc07100d",
+      "source_path": "connectors/pantheon_connectors/broker/adapter.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/bootstrap.py": {
+      "mode": "100644",
+      "sha256": "f67e21577fa0184921faf770cb9543226bc668b44c46be2ea1ab14df926a8e0c",
+      "source_path": "connectors/pantheon_connectors/broker/bootstrap.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/catalog.py": {
+      "mode": "100644",
+      "sha256": "2fa42d013f5ba86d05899e94450bbdcf320cb5af528eff77bfa898572f414a93",
+      "source_path": "connectors/pantheon_connectors/broker/catalog.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/client.py": {
+      "mode": "100644",
+      "sha256": "86ee6e88e63b73656df797d24a1873853ff34ff9134cfd10e12bf0ecd27a55dd",
+      "source_path": "connectors/pantheon_connectors/broker/client.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/codex_setup_policy.py": {
+      "mode": "100644",
+      "sha256": "0082aa1ffc3ca0ddc4dab582a4c301a713a53ceadcdfdc66f78d047676b6f272",
+      "source_path": "connectors/pantheon_connectors/broker/codex_setup_policy.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/codex_trust.py": {
+      "mode": "100644",
+      "sha256": "895616d4c6eb51ebae65df19c08e1a1023a22d81105811d232d38e2a29371594",
+      "source_path": "connectors/pantheon_connectors/broker/codex_trust.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/connect.py": {
+      "mode": "100644",
+      "sha256": "90f4817bbb11163b3031cca067df9c8f7942e3ffb652d9243e0cfa44d4876d63",
+      "source_path": "connectors/pantheon_connectors/broker/connect.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/hermes_live.py": {
+      "mode": "100644",
+      "sha256": "08dc0f147331702b9a53a1ed650c88c02def04a7ff6734e958cca171dd52993d",
+      "source_path": "connectors/pantheon_connectors/broker/hermes_live.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/package.py": {
+      "mode": "100644",
+      "sha256": "2da75de1d4104e0c0d9148b4cac292e0f62e915aec48d1ba75ee0b7dc6e9910b",
+      "source_path": "connectors/pantheon_connectors/broker/package.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/permission_contract.py": {
+      "mode": "100644",
+      "sha256": "1141a9d270e37d0d45214a4485ba48aebea8bc5a8b8fc7bd167612359dc5ca1b",
+      "source_path": "connectors/pantheon_connectors/broker/permission_contract.py"
+    },
+    "portable/connectors/pantheon_connectors/broker/permissions.json": {
+      "mode": "100644",
+      "sha256": "e3eeabf1d0de1d923faf2cfcdc41efc51b5fa7223ba9671d03f36595d3ddfe9a",
+      "source_path": "connectors/pantheon_connectors/broker/permissions.json"
+    },
+    "portable/connectors/pantheon_connectors/broker/transport.py": {
+      "mode": "100644",
+      "sha256": "a990aff4c56db185543af9d0357fa8ea87bb33700f0431d9b63eba6b8d17f2e4",
+      "source_path": "connectors/pantheon_connectors/broker/transport.py"
+    },
+    "portable/connectors/pantheon_connectors/claude_channel.py": {
+      "mode": "100644",
+      "sha256": "c55056e43548d9ea9542a6168ea72c9a76021eeb4e7a776d476d8aa4eff2581a",
+      "source_path": "connectors/pantheon_connectors/claude_channel.py"
+    },
+    "portable/connectors/pantheon_connectors/claude_mcp.py": {
+      "mode": "100644",
+      "sha256": "52a7de625e8e1b881ddc0434b087ed64da1d64ff3f050b680ed53e886fc8ae47",
+      "source_path": "connectors/pantheon_connectors/claude_mcp.py"
+    },
+    "portable/connectors/pantheon_connectors/claude_native.py": {
+      "mode": "100644",
+      "sha256": "b85dc77e205ea386946b8ca127737c32ddbabdc3e76b9df3881597d49bbb3974",
+      "source_path": "connectors/pantheon_connectors/claude_native.py"
+    },
+    "portable/connectors/pantheon_connectors/cli.py": {
+      "mode": "100644",
+      "sha256": "8a91848a201b0c226e93e2a0dd325e05f7968b58f08de8106115452660dd61e4",
+      "source_path": "connectors/pantheon_connectors/cli.py"
+    },
+    "portable/connectors/pantheon_connectors/client.py": {
+      "mode": "100644",
+      "sha256": "963f511849e985831011ef3415f7027256965f6d9b40c76acc82066e79649313",
+      "source_path": "connectors/pantheon_connectors/client.py"
+    },
+    "portable/connectors/pantheon_connectors/codex.py": {
+      "mode": "100644",
+      "sha256": "8a58ed68ae9f256a8c1bfa8e3a741cdcdf17246f6bb19dcbdc540d23d34dc319",
+      "source_path": "connectors/pantheon_connectors/codex.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_audit.py": {
+      "mode": "100644",
+      "sha256": "b8c1110b29a28c1c978143c530947c795f5f2e98964d45ac9fbe764fa3d6e93a",
+      "source_path": "connectors/pantheon_connectors/codex_audit.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_compatibility.py": {
+      "mode": "100644",
+      "sha256": "0fa2e53f1c26121e119b3a5d2901f57bfef82a84cd8eef126161f423ed481b7f",
+      "source_path": "connectors/pantheon_connectors/codex_compatibility.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_daemon.py": {
+      "mode": "100644",
+      "sha256": "4040e99aef12441f599879270502ca498f3c2af1a02bc69c792f2691750ddc45",
+      "source_path": "connectors/pantheon_connectors/codex_daemon.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_delivery.py": {
+      "mode": "100644",
+      "sha256": "047f77a62c996475a192f51bb4a1ef9006598cb70babc3f1d83f731bfc55e024",
+      "source_path": "connectors/pantheon_connectors/codex_delivery.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_hosted.py": {
+      "mode": "100644",
+      "sha256": "9713994fb347b6ae8bf1995df0b2ef4e6cbc28827c4eb426fd82b9f3c241d4e1",
+      "source_path": "connectors/pantheon_connectors/codex_hosted.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_mcp.py": {
+      "mode": "100644",
+      "sha256": "2ff47a807a4b4955ec125abc42fbd7d9a516434b2e2bcf6f763864d238b42baf",
+      "source_path": "connectors/pantheon_connectors/codex_mcp.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_output.py": {
+      "mode": "100644",
+      "sha256": "d6cc015a0c4b0d98188c9c639996257559f75f94a19db96ac22f5e303153f246",
+      "source_path": "connectors/pantheon_connectors/codex_output.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_output_watch.py": {
+      "mode": "100644",
+      "sha256": "13a9c1883d733ad7fd56b6bd2960f7ea1559b22a579c9a0625f79107373ecb56",
+      "source_path": "connectors/pantheon_connectors/codex_output_watch.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_panel.py": {
+      "mode": "100644",
+      "sha256": "6977d2b6ef12dc55b80308e114da9e61da4bdf74a54ce711717be3af49dfb3e4",
+      "source_path": "connectors/pantheon_connectors/codex_panel.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_queue.py": {
+      "mode": "100644",
+      "sha256": "9c4d45745ff3af30591ee63e88f5d202a05e207b8e4ab91c65bbe0e0e7dcf504",
+      "source_path": "connectors/pantheon_connectors/codex_queue.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_setup.py": {
+      "mode": "100644",
+      "sha256": "26b14372a2267517ee846c3f6ef29e3d8c41d179a82613180474d39e7024d2e7",
+      "source_path": "connectors/pantheon_connectors/codex_setup.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_wait.py": {
+      "mode": "100644",
+      "sha256": "52c93cad8c4dc0748ac6ddeb65262cea92f013c5c39b6bf176757e7ff6e7007a",
+      "source_path": "connectors/pantheon_connectors/codex_wait.py"
+    },
+    "portable/connectors/pantheon_connectors/codex_watch.py": {
+      "mode": "100644",
+      "sha256": "b1875d9eff93653a0a98bee70c828ac97e30360be1c1ea5619d74952ba3ea119",
+      "source_path": "connectors/pantheon_connectors/codex_watch.py"
+    },
+    "portable/connectors/pantheon_connectors/environment.py": {
+      "mode": "100644",
+      "sha256": "4681943a99805906b9793a0a2f83b9c48f5b3ae91cce39fc83da4584df01d33b",
+      "source_path": "connectors/pantheon_connectors/environment.py"
+    },
+    "portable/connectors/pantheon_connectors/feature_defaults.py": {
+      "mode": "100644",
+      "sha256": "91829b46357156f75f92d967e9f9665076b43ed14610b2977f97c8bbdc5afa73",
+      "source_path": "connectors/pantheon_connectors/feature_defaults.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes.py": {
+      "mode": "100644",
+      "sha256": "c0d7afc08c81b52bfdcc13839c25d54b186122f93540cb0e14986d0d6bb70c77",
+      "source_path": "connectors/pantheon_connectors/hermes.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_audit.py": {
+      "mode": "100644",
+      "sha256": "2d2401ebfad8b1c4b512b730a27896828e5475cf247f41584d3302030038b46f",
+      "source_path": "connectors/pantheon_connectors/hermes_audit.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_incoming.py": {
+      "mode": "100644",
+      "sha256": "6bb6ba00f6e1f2a2d7260b254757e29936a20dbeedd58ef04d1270fbea8c9105",
+      "source_path": "connectors/pantheon_connectors/hermes_incoming.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_limits.py": {
+      "mode": "100644",
+      "sha256": "5bc78b68e25c290477e90d2845296fd0eaf0116e36aa6379f229b6cb69697eca",
+      "source_path": "connectors/pantheon_connectors/hermes_limits.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_plugin.py": {
+      "mode": "100644",
+      "sha256": "3625b1c7b76f386e178464feb0fb42d9b9265c1d80a4c2fda70fdefbb24c4f2a",
+      "source_path": "connectors/pantheon_connectors/hermes_plugin.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_review.py": {
+      "mode": "100644",
+      "sha256": "9b429f02ad7ae37226d820e695da44d32a3c9b860175b8a137d2544259ecd05c",
+      "source_path": "connectors/pantheon_connectors/hermes_review.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_setup.py": {
+      "mode": "100644",
+      "sha256": "d810608338828e00d1aa8fe8f36c042b4aec77e2734941480b832c3fce1ea895",
+      "source_path": "connectors/pantheon_connectors/hermes_setup.py"
+    },
+    "portable/connectors/pantheon_connectors/hermes_tools.py": {
+      "mode": "100644",
+      "sha256": "c4e8f77fa3eeb96eef49c0708acee29b858fd4c9bcb7a924df806e019fca0ab8",
+      "source_path": "connectors/pantheon_connectors/hermes_tools.py"
+    },
+    "portable/connectors/pantheon_connectors/hosted_discovery.py": {
+      "mode": "100644",
+      "sha256": "6c77ffa654174381fe8828ecca461b5bd583ea8b9fc687f56617d70ee6286a1f",
+      "source_path": "connectors/pantheon_connectors/hosted_discovery.py"
+    },
+    "portable/connectors/pantheon_connectors/hosted_v3.py": {
+      "mode": "100644",
+      "sha256": "66eb044953728ab499b45447a2c45e969460365dcb1b3c327a93a35ea41174de",
+      "source_path": "connectors/pantheon_connectors/hosted_v3.py"
+    },
+    "portable/connectors/pantheon_connectors/invitations.py": {
+      "mode": "100644",
+      "sha256": "105a990b6c20b10dd5e2da4c5adbe2a1b98f92d4888f5dc9ae270694737b70ae",
+      "source_path": "connectors/pantheon_connectors/invitations.py"
+    },
+    "portable/connectors/pantheon_connectors/lifecycle_status.py": {
+      "mode": "100644",
+      "sha256": "de5072ba1c959ad4eb29411ef9cd33be975227a93510c83ceb2936f120c46b34",
+      "source_path": "connectors/pantheon_connectors/lifecycle_status.py"
+    },
+    "portable/connectors/pantheon_connectors/mcp.py": {
+      "mode": "100644",
+      "sha256": "6ebce52c53040a5bd3c05cd000920d28871c332ce93540ea185de1670f39854a",
+      "source_path": "connectors/pantheon_connectors/mcp.py"
+    },
+    "portable/connectors/pantheon_connectors/mcp_elicitation.py": {
+      "mode": "100644",
+      "sha256": "dd6821b77fa486d82bfe3f726960f9a0210bf28246d7b4f4a930ed58452f899f",
+      "source_path": "connectors/pantheon_connectors/mcp_elicitation.py"
+    },
+    "portable/connectors/pantheon_connectors/native_cli.py": {
+      "mode": "100644",
+      "sha256": "43b730dd20add35a6ecf2a33ff61c20c7de14caf741b4ca017716c18dccdfd34",
+      "source_path": "connectors/pantheon_connectors/native_cli.py"
+    },
+    "portable/connectors/pantheon_connectors/notification_policy.py": {
+      "mode": "100644",
+      "sha256": "2abde07c9a7b1d05c05c549c056ba7f220b728b6bd6d1808f0c0c9fe7f046617",
+      "source_path": "connectors/pantheon_connectors/notification_policy.py"
+    },
+    "portable/connectors/pantheon_connectors/onboarding.py": {
+      "mode": "100644",
+      "sha256": "c5c000924e1322c9d32e5902d1cbc189fee7994b0c49c2fffb99a648b35714dd",
+      "source_path": "connectors/pantheon_connectors/onboarding.py"
+    },
+    "portable/connectors/pantheon_connectors/operational.py": {
+      "mode": "100644",
+      "sha256": "c6fdfd747c2208b4406a29a0617c7bdafbdbc0afcd8381f5a22ad7e7503f6542",
+      "source_path": "connectors/pantheon_connectors/operational.py"
+    },
+    "portable/connectors/pantheon_connectors/read_retry.py": {
+      "mode": "100644",
+      "sha256": "cfb1695110a85e85a017b8fde47be6e0a388d26cac341d2e7fa54bcf0c4668ec",
+      "source_path": "connectors/pantheon_connectors/read_retry.py"
+    },
+    "portable/connectors/pantheon_connectors/receiver_lifecycle.py": {
+      "mode": "100644",
+      "sha256": "8801a9d5221196198e09c553f26bfc55b0da90bb34b93abb8d8e2b8fb926e369",
+      "source_path": "connectors/pantheon_connectors/receiver_lifecycle.py"
+    },
+    "portable/connectors/pantheon_connectors/runtime_policy.py": {
+      "mode": "100644",
+      "sha256": "abfbf357f3eec5b575a7791805c908f809585238f71a424454ff0907dda83147",
+      "source_path": "connectors/pantheon_connectors/runtime_policy.py"
+    },
+    "portable/connectors/pantheon_connectors/setup_timing.py": {
+      "mode": "100644",
+      "sha256": "987dcda193fb520ba7867dfa0785cda854abb32f93017d0dda5e413bfbabd00c",
+      "source_path": "connectors/pantheon_connectors/setup_timing.py"
+    },
+    "portable/connectors/pantheon_connectors/sites.py": {
+      "mode": "100644",
+      "sha256": "703db775f9e5da0c65fdc593ebeb7cf70fbefd9ea4406ab21e23a672a9c0f4a8",
+      "source_path": "connectors/pantheon_connectors/sites.py"
+    },
+    "portable/connectors/pantheon_connectors/skills/collaborate/SKILL.md": {
+      "mode": "100644",
+      "sha256": "854a7e73fe20cfdd6e94c38c89dcc8937831ba3d9108f510d43b0396c0dfba5c",
+      "source_path": "connectors/pantheon_connectors/skills/collaborate/SKILL.md"
+    },
+    "portable/connectors/pantheon_connectors/state.py": {
+      "mode": "100644",
+      "sha256": "80d5181080fe8fbeaa70e27302b591e02e0cb1d1c0088d7972c542e228fe863b",
+      "source_path": "connectors/pantheon_connectors/state.py"
+    },
+    "portable/connectors/pantheon_connectors/terminal_cleanup.py": {
+      "mode": "100644",
+      "sha256": "d12923a0a548c7d83adc70f874c5f9a41d90074ce25f6398514b8f05f2a0acd1",
+      "source_path": "connectors/pantheon_connectors/terminal_cleanup.py"
+    },
+    "portable/connectors/pantheon_connectors/tls.py": {
+      "mode": "100644",
+      "sha256": "1f34100b8a07318823b9707134f359d961aa5e8c46eaca0c1990afcf08d0c5b9",
+      "source_path": "connectors/pantheon_connectors/tls.py"
+    },
+    "portable/connectors/pantheon_connectors/transfers.py": {
+      "mode": "100644",
+      "sha256": "36a2cc5e9f317e32f118fb6341f9f9097edac684361c95ad7c5f437de71a6360",
+      "source_path": "connectors/pantheon_connectors/transfers.py"
+    },
+    "portable/connectors/pantheon_connectors/version.py": {
+      "mode": "100644",
+      "sha256": "5764e92d09747d66d3d4577c94d534edd279f743120bf9259783e1afcfceef44",
+      "source_path": "connectors/pantheon_connectors/version.py"
+    },
+    "portable/connectors/pantheon_connectors/worker.py": {
+      "mode": "100644",
+      "sha256": "dfefde154bc41c97a1530b6b1cccfe9e1ff9a1a639a7685ac93d9abfac7a1295",
+      "source_path": "connectors/pantheon_connectors/worker.py"
+    },
+    "portable/mcp.json": {
+      "mode": "100644",
+      "sha256": "750fd58d002bd375a0ae1e64238eb17a6f9e4082d1418e9cdc0b2560653d8d29",
+      "source_path": "packaging/hermes-portable/mcp.json"
+    },
+    "portable/plugin.json": {
+      "mode": "100644",
+      "sha256": "31027b2a2a37b513f7a1d5ef343c2f6b615fbcca720fae737eaa4515ec0c1aac",
+      "source_path": "packaging/hermes-portable/plugin.json"
+    },
+    "portable/protocol/joining-v1.json": {
+      "mode": "100644",
+      "sha256": "325da3743ed10d86b6cc8926557af560f881c3ca41541a8beece9bc6717cab96",
+      "source_path": "protocol/joining-v1.json"
+    },
+    "portable/server.py": {
+      "mode": "100644",
+      "sha256": "f484f0115651865d0275bfac34a7ab95f1d59caae8e94ea55e460f153d5a9824",
+      "source_path": "packaging/hermes-portable/server.py"
+    },
+    "protocol/joining-v1.json": {
+      "mode": "100644",
+      "sha256": "325da3743ed10d86b6cc8926557af560f881c3ca41541a8beece9bc6717cab96",
+      "source_path": "protocol/joining-v1.json"
+    },
+    "scripts/codex_tool_output_contract.py": {
+      "mode": "100644",
+      "sha256": "42409f7d0001ac1c5d8522c89a3f066c6143a247fcc83126c877f2d27687d3be",
+      "source_path": "scripts/codex_tool_output_contract.py"
+    }
+  },
+  "format": "pantheon.hermes-distribution.v1",
+  "scope": "Native Hermes entrypoint, collaboration skill, unchanged shared connector code, Codex panel resources, offline tool-output test helper, protocol and all connector tests. Only plugin.yaml tools and the Pantheon collaboration skill are registered.",
+  "source_commit": "819c91a30bd48962209de86f48eda46dda7b41fc"
+}
