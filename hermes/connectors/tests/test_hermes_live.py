@@ -90,3 +90,17 @@ class LiveNativeIdentity(unittest.TestCase):
         self.assertEqual(first['status'], 'blocked')
         self.assertEqual(second['status'], 'blocked')
         self.plugin.handle.assert_called_once()
+
+
+class PortableLoadedVersion(unittest.TestCase):
+    def test_doctor_distinguishes_loaded_hook_and_portable_process(self):
+        import io
+        from pantheon_connectors.broker.hermes_live import serve
+        from pantheon_connectors.version import HERMES_BROKER_VERSION
+        source = io.StringIO(json.dumps({'jsonrpc':'2.0','id':1,'method':'tools/call','params':{'name':'pantheon_doctor','arguments':{}}})+'\n')
+        output = io.StringIO()
+        with patch('pantheon_connectors.broker.hermes_live.request', return_value={'loaded_connector_version':'old-hook'}), patch('pantheon_connectors.broker.adapter.ToolSnapshot.watch'), patch('pantheon_connectors.broker.adapter.ToolSnapshot.close'):
+            serve(Path('/unused-native-home'), source, output)
+        result = json.loads(output.getvalue())['result']['structuredContent']
+        self.assertEqual(result['loaded_connector_version'], 'old-hook')
+        self.assertEqual(result['loaded_portable_version'], HERMES_BROKER_VERSION)

@@ -12,6 +12,7 @@ from pantheon_connectors.onboarding import HERMES_COMMIT, TOOLS
 from pantheon_connectors.hermes_tools import TOOLS as HERMES_TOOLS
 from pantheon_connectors.hermes_setup import TOOLS as PREPARE_TOOLS
 from pantheon_connectors.broker.connect import TOOL as CONNECT_TOOL
+from pantheon_connectors.worker import Blocked
 
 
 class Context:
@@ -44,6 +45,54 @@ class RegistrationTests(unittest.TestCase):
                 self.assertIsNone(plugin.catalogue.revision)
             finally:
                 for close in reversed(ctx.cleanup): close()
+
+    def test_doctor_reports_loaded_build_independently_of_current_disk_metadata(self):
+        from pantheon_connectors.hermes_plugin import NativePlugin, LOADED_CONNECTOR_VERSION
+        with tempfile.TemporaryDirectory() as temp:
+            plugin = NativePlugin(Context(), Path(temp)/'setup.json', 'host-version', 'host-commit')
+            try:
+                with patch('pantheon_connectors.broker.package.metadata', return_value={'package_version':'999.0.0'}):
+                    self.assertEqual(plugin.doctor('native')['loaded_connector_version'], LOADED_CONNECTOR_VERSION)
+            finally:
+                plugin.close()
+
+    def test_registration_rejects_missing_public_capability_without_side_effects(self):
+        with tempfile.TemporaryDirectory() as temp:
+            ctx = Context()
+            ctx.inject_message = lambda message: None  # Cannot target the exact native session.
+            with self.assertRaisesRegex(Blocked, 'inject_message'):
+                self.load(ctx, Path(temp))
+            self.assertEqual(ctx.skills, {})
+            self.assertEqual(ctx.hooks, {})
+            self.assertEqual(ctx.tools, {})
+
+    def test_non_git_host_uses_public_version_without_requiring_a_checkout(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as temp:
+            home = Path(temp)
+            constants = SimpleNamespace(__file__=str(home/'hermes_constants.py'), get_hermes_home=lambda: home)
+            with patch('pantheon_connectors.broker.package.metadata', return_value=None), patch.dict('sys.modules', hermes_constants=constants, hermes_cli=SimpleNamespace(__version__='99.1.0')), patch('pantheon_connectors.hermes_plugin.subprocess.run', side_effect=subprocess.CalledProcessError(1, 'git')):
+                plugin = register(Context())
+            try:
+                self.assertEqual(plugin.version, 'hermes:99.1.0')
+                plugin.observe(session_id='native', platform='desktop')
+                plugin.preflight(plugin.binding('native'))
+            finally:
+                plugin.close()
+
+    def test_updated_host_commit_is_evidence_not_an_allowlist(self):
+        from pantheon_connectors.hermes_plugin import NativePlugin
+        with tempfile.TemporaryDirectory() as temp:
+            ctx = Context()
+            for commit in ('1' * 40, '2' * 40):
+                plugin = NativePlugin(ctx, Path(temp)/'setup.json', 'git:'+commit, commit)
+                try:
+                    plugin.observe(session_id='native', platform='desktop')
+                    plugin.preflight(plugin.binding('native'))
+                    with self.assertRaisesRegex(Blocked, 'identity changed'):
+                        plugin.preflight(dict(plugin.binding('native'), version='different'))
+                finally:
+                    plugin.close()
 
     def test_declared_hooks_match_native_registration(self):
         manifest = (Path(__file__).resolve().parents[2]/'plugin.yaml').read_text()

@@ -118,3 +118,17 @@ class DiscoveryTests(unittest.TestCase):
             with self.assertRaises(Blocked):validate_discovery(bad,TRUSTED_ORIGIN,'codex')
         d['schema']='pantheon.hosted-onboarding.v1'
         with self.assertRaises(Blocked):validate_discovery(d,TRUSTED_ORIGIN,'codex')
+
+
+class HermesLatestHostTests(unittest.TestCase):
+    def test_updated_host_is_checked_by_capabilities_and_binding_not_tested_revision(self):
+        from pantheon_connectors.hosted_discovery import matches_native_host
+        d = descriptor('hermes')
+        p = d['packages']['hermes']
+        p['host'] = dict(compatibility='native-capabilities', tested_version='historical-evidence')
+        validate_discovery(d, TRUSTED_ORIGIN, 'hermes')
+        for version in ('git:'+'1'*40, 'git:'+'2'*40, 'hermes:future-release'):
+            binding = dict(runtime='hermes', version=version, surface='native-adapter')
+            self.assertTrue(matches_native_host(p, binding))
+            self.assertFalse(matches_native_host(p, dict(binding, surface='native-queue')))
+            self.assertFalse(matches_native_host(p, dict(binding, version='')))

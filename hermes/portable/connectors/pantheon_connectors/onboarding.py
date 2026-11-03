@@ -18,6 +18,7 @@ from .state import Journal, load_private, save_private
 from .worker import Blocked, prompt
 
 VERSION = "0.2.0"
+# Historical test evidence only; never an installation or admission constraint.
 HERMES_COMMIT = "e06df9c2eae6901f4c88f464e0ae6e753c0428b8"
 
 

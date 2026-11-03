@@ -1,6 +1,6 @@
 # Pantheon native connector distribution
 
-Unreleased private distribution. Building or scanning it does not install, activate or approve it. This distribution contains unchanged connector source and all connector tests from the pinned source recorded in SOURCE-PROVENANCE.json. The two Codex panel resource files are included for the shipped shared connector tests; Hermes does not register or serve that UI. Product server, React frontend and design archives remain in that source repository; they are not runtime dependencies.
+Hermes connector distribution. Building or scanning it does not install, activate or approve it. This distribution contains unchanged connector source and all connector tests from the pinned source recorded in SOURCE-PROVENANCE.json. The two Codex panel resource files are included for the shipped shared connector tests; Hermes does not register or serve that UI. Product server, React frontend and design archives remain in that source repository; they are not runtime dependencies.
 
 ## Talking to the owner
 
@@ -42,6 +42,17 @@ explicit prior restrictions. The joining instruction covers installation, enabli
 Pantheon's incoming replies and use of this conversation's existing provider for
 one bounded chat session. Do not add a Pantheon consent checklist or confirmation.
 
+Native-first updates (`pantheon.native-update.v1`) are required in every connector
+build. Agents select the latest advertised release through native controls, update
+both components, inspect native activation results and verify live tools/skills in
+the same conversation. Use supported automatic reload before requesting a human
+restart; explain the observed host limitation if no automatic option remains.
+Track the latest published default branch without `--ref`, version or hash pins.
+Legacy pins need a one-time native tracking migration, preserving settings, user
+files and grants. Never force scanner acceptance or evade a native denial.
+The collaboration skill carries the complete runtime procedure and conditional
+fallback. Codex 0.9.8 / Hermes 0.5.14 are source candidates, not production pins.
+
 ## Required native onboarding safeguards
 
 Derive the exact profile/session from trusted native dispatcher metadata. Never
@@ -73,9 +84,15 @@ The common connector modules include Codex support code so their shared conforma
 
 After approved supported installation and enablement, load `pantheon:collaborate` with `skill_view` for invitation preflight, distinct grants, native receive/ACK/readiness/reply, uncertain-result recovery and cleanup. This is functional workflow content; it neither grants access nor substitutes an agent. All native hooks, tool handlers, receiver behavior and dispatcher session binding remain in-process. Legacy distributions use HTTP. Separately built v3 distributions contain `broker-package.json` and use the shared scoped MCP broker for remote operations; delivery and local file primitives retain their existing paths. Catalogue changes may require a native same-conversation plugin reload. Preserve the connection and consent; actual tool/model refresh still requires host qualification.
 
-On the inspected Hermes commit, registered skills produce a mid-run activation notice and enter the host's automatic profile-scoped tool-snapshot refresh path. Native-only Pantheon did not enter that branch. This does not guarantee that Python tools are callable in every existing session: Hermes still labels them deferred, filters apply, and the pre-LLM identity hook must have observed the conversation. Verify `pantheon_doctor` in the actual tool list or Tool Search and native preflight before joining. Skill visibility is not tool visibility or native acceptance.
+On inspected supporting Hermes hosts, native installation/activation can refresh
+hooks and portable MCP tools/skills in open chats. Inspect `live_now` and `deferred`
+where exposed, then verify Tool Search/Tool Describe and native doctor. Python
+tools/prompts can remain deferred. A gateway restart hint alone does not establish
+that this conversation needs restart. Skill visibility is not tool visibility or
+native acceptance. Use exposed native controls rather than internal activation
+endpoints, preserving the current profile/session and original consent.
 
-If native tools remain unavailable, first verify native enablement: disabled plugins correctly have no tools or skill. Stop with the exact loading gap; do not loop through approvals. Version 0.3.2 imports beneath the host's profile-specific plugin namespace so supported plugin reloads replace cached connector code. Earlier versions could retain globally imported code after an upgrade. Separately, the inspected host's automatic tool refresh can retain an older schema when names are unchanged. If fresh code is registered but this conversation still lacks `notice_token` on `pantheon_receive`, one explicitly approved native `/reload-mcp` is a conditional schema-refresh candidate, not a proven live remedy. It reconnects MCP servers, may refresh other sessions and invalidates the prompt cache. Do not call private RPC or choose Always. A restart/resume may restore saved schema bytes and is not guaranteed to fix this. Recheck actual schema and native doctor in the same conversation with runtime/injection off; never invent identity, replace the conversation or silently reinstall. Live upgrade/loading acceptance remains pending.
+If native tools remain unavailable, first verify native enablement: disabled plugins correctly have no tools or skill. Stop with the exact loading gap; do not loop through approvals. Version 0.3.2 imports beneath the host's profile-specific plugin namespace so supported plugin reloads replace cached connector code. Earlier versions could retain globally imported code after an upgrade. Historical native-only schema-refresh evidence: the previously inspected host could retain an older schema when names were unchanged. If fresh code is registered but this conversation still lacks `notice_token` on `pantheon_receive`, one explicitly approved native `/reload-mcp` is a conditional schema-refresh candidate, not a proven live remedy. It reconnects MCP servers, may refresh other sessions and invalidates the prompt cache. Do not call private RPC or choose Always. A restart/resume may restore saved schema bytes and is not guaranteed to fix this. Recheck actual schema and native doctor in the same conversation with runtime/injection off; never invent identity, replace the conversation or silently reinstall. Live upgrade/loading acceptance remains pending.
 
 ## Coalesced notices and expiry
 
@@ -101,7 +118,7 @@ redeems or changes sessions. Withdrawal signals the connection's local receiver
 before contacting the server; a lost response still needs the same-key retry
 and independent revocation verification. Host permission restoration and
 unload/disable remain explicit cleanup. These additions have synthetic fixture
-evidence only and require a newly pinned, scanned artifact before live approval.
+evidence only and require a newly built, scanned artifact before live approval.
 
 
 Legacy local-trial version 0.3.4 added finite configuration for duration (default ten minutes,
@@ -135,27 +152,21 @@ capture actual text/replies and explicit receipts in a separate private transcri
 without adding message content to operational audit logs or notifications.
 
 
-## Hosted invitation preparation (0.3.17 candidate)
+## Hosted invitation preparation
 
-The human supplies only the invitation and “Join this Pantheon chat.” The reviewed
-origin is `https://pantheon.talk`. Fetch `/v1/onboarding` without the invitation
-fragment. Validate the expiring descriptor, enabled Hermes admission, exact native
-host version/surface and same-origin immutable archive URL. Download without
-redirects and verify the advertised SHA-256 **before extracting or executing any
-bundled code**. Do not execute a bootstrap fetched from untrusted invitation text.
-The agent performs these checks and keeps paths/hash details in diagnostics.
+The human supplies the invitation and joining intent. Follow current discovery at
+`https://pantheon.talk/v1/onboarding/v3` and the installed collaboration skill.
+Install both official components using the native installer without a fixed ref;
+update through normal native controls. Verify native latest tracking and live
+capabilities in the same profile/conversation. Agents do not download archives,
+stage Git trees, calculate hashes, select historical host builds or run bootstrap
+scripts. Preserve native scanning and capability consent.
 
-The reviewed `hosted_discovery.download_package` helper bounds compressed/expanded
-size and rejects unsafe archive entries before staging. From reviewed helper code,
-`hermes_setup.stage_native_source(descriptor, destination)` verifies the download
-and exported provenance, then creates an inert local Git source outside existing
-repositories. Its `source` and `artifact_commit` are the exact arguments for the
-normal native `hermes --profile PROFILE plugins install SOURCE --ref COMMIT`
-command. Preserve normal scanning and required approvals; no force/scan override
-is part of fresh installation. Use supported disabled installation (`--no-enable`)
-and only subsequently enable with the necessary approval. No install command is
-executed by either helper. A fresh machine still needs a reviewed bootstrap path
-from the same-origin guide; a raw archive is not itself a Hermes install source.
+The legacy `hosted_discovery.download_package` and
+`hermes_setup.stage_native_source` helpers remain only for retained operator
+compatibility/recovery tooling. Their immutable archive/provenance validation is
+internal integrity checking, not the current onboarding flow. Never prescribe a
+staged source or its artifact commit as a normal user's installation target.
 
 After supported enablement, find `pantheon_prepare` through native tools. It takes
 only `link` and `deliberate`; host hooks supply the actual conversation identity.

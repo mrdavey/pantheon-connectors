@@ -77,7 +77,11 @@ class SetupConnectTests(unittest.TestCase):
             self.assertEqual(result['status'], 'native_reload_required')
             self.assertFalse(result['runtime_started'])
             self.assertFalse(result['membership_started'])
-            self.assertEqual(result['next_action'], 'end_turn_then_reload_same_conversation')
+            self.assertEqual(result['next_action'], 'try_native_reload_same_conversation')
+            self.assertEqual(result['reload_requirement'], 'fresh_native_plugin_process')
+            self.assertEqual(result['loaded_connector_version'], self.server.version)
+            self.assertEqual(result['manual_fallback']['when'], 'no_supported_automatic_option')
+            self.assertIn('/quit', result['manual_fallback']['instruction'])
         self.assertEqual(self.call('pantheon_setup', {'action': 'status'})['status'], 'native_reload_required')
         self.server.elicit.assert_called_once()
         self.assertEqual(self.prepare.call_count, 1)  # Review inspection only.

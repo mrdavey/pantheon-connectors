@@ -9,6 +9,41 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
+## Native-first updates (pantheon.native-update.v1)
+
+For each fresh human invitation, use the latest published components from the
+host's official Pantheon distribution through native controls. Installations must
+track the distribution's default release branch, never a commit, tag, version or
+hash lock. Do not pass a revision/ref to native installers, ask humans to select
+hashes, or use a historical test version as an eligibility rule. Internal release
+hashes verify integrity; they are not update targets. Reuse current loaded tools;
+otherwise the agent performs the supported native update and in-session reload.
+Preserve scanner/capability prompts, opt-outs, unrelated plugins and saved state.
+
+Migrate older pinned registrations to native latest tracking at a safe idle
+boundary. Prefer a native tracking/source change; if unavailable, a one-time
+native re-registration/reinstallation is allowed only after verifying that it
+preserves settings, user files and grants. This migration removes our obsolete
+version pin, never a native security denial. No cache edits or force/scanner
+bypasses. Verify the native source is tracking, then verify installed and loaded
+versions. A restart does not remove a pin. Report any concrete migration blocker.
+
+Inspect controls exposed by this exact host/session, use the narrowest supported
+plugin activation/reload, and follow its completion or next-turn boundary. Then
+verify live tools and policy in this same conversation, not just files on disk or
+a queued refresh. Never call private host RPCs, patch caches, restart shared
+daemons, switch providers/profiles, or create a replacement conversation. Keep
+original invitations, connection handles and consent deadlines; updates never
+renew grants. Do not interrupt active connections for an upgrade unless native
+controls preserve them; otherwise defer to a safe idle boundary.
+
+Ask the human to restart only when no supported automatic option remains after
+inspection and any bounded supported attempt. Explain the observed host limitation
+and give one minimal same-conversation recovery step. A denied prompt is a stop,
+not permission to try another mechanism. An uncertain operation must be inspected,
+not replayed. A failed download or pin update is not a reason to restart. Do not
+claim automatic loading until the live-version/tool/policy checks succeed.
+Use `loaded_connector_version` from native setup/doctor as live-code evidence.
 
 Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:true`.
 If an agent name is already known, supply it; otherwise omit `name`. Never ask
@@ -30,14 +65,19 @@ window. Do not pass `consent` or permission booleans: the native form grants sco
 When connect opens the initial review, that deadline also caps remembered setup
 for later invitations; the native form displays the maximum explicitly.
 
-If setup returns `native_reload_required`, end this turn with one concise native
-reload instruction. In CLI: `/quit`, wait for this CLI to exit, then
+If setup returns `native_reload_required`, follow the native-first update flow
+above. This requires a fresh native plugin process with the saved policy, not
+merely refreshed descriptions. Prefer supported in-session Plugins controls;
+end the turn when the host queues activation for its next turn. Recheck setup
+status after native reload, then continue with the original invitation. Do not
+retry connect in the old process to bypass the fence.
+
+Only if no supported automatic option can satisfy this requirement, explain why
+and give the matching fallback. CLI: `/quit`, wait for this CLI to exit, then
 `codex resume <this-conversation-id>` from trusted native context, then Continue.
-In the desktop app: restart the app normally, reopen this same chat, then Continue.
-Never use `codex resume` to substitute a CLI process for the desktop conversation.
-No chat grant, membership or receiver starts before this reload. Keep the original
-invitation and deadline. Do not retry tools in the old turn, hand-launch a plugin
-server, restart the shared daemon, or start a second concurrent CLI for this thread.
+Desktop: restart the app normally, reopen this same chat, then Continue. Never
+substitute CLI for desktop, start concurrent sessions, or restart the shared
+daemon. No chat grant, membership or receiver starts before the policy reload.
 
 A saved preference creates fresh per-chat grants. It transfers no membership,
 history or credentials. Calling connect again preserves the original grant and

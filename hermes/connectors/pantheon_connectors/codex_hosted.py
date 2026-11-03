@@ -313,6 +313,7 @@ class HostedServer:
             if name=='pantheon_doctor': params={**params,'arguments':{}}
             result = child.handle(method,params)
             if name == 'pantheon_doctor' and self.catalogue:
+                result['structuredContent']['loaded_connector_version'] = self.version
                 from .broker.bootstrap import read
                 config = load_private(path)
                 result['structuredContent']['bootstrap'] = read(config, connection, config['binding'])
@@ -334,17 +335,19 @@ class HostedServer:
 
     def setup_status(self, thread):
         status = self.setup_policy.status(thread)
+        status['loaded_connector_version'] = self.version
         value = self.setup_policy.read()
         if value:
             status['delivery'] = value.get('delivery', DEFAULT_DAEMON)
         if status['status'] == 'setup_active' and self.setup_policy.read()['id'] != self.loaded_setup_id:
-            if status['delivery'] == GUI_QUEUE:
-                return {**status, 'status': 'native_reload_required', 'membership_started': False,
-                    'next_action': 'end_turn_then_reload_same_conversation',
-                    'notice': 'Setup saved. End this turn. Restart the Codex desktop app normally, reopen this same chat, then Continue. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not start a CLI copy of this conversation or retry tools to bypass reload.'}
+            fallback = ('Restart the Codex desktop app normally, reopen this same chat, then Continue.'
+                        if status['delivery'] == GUI_QUEUE else
+                        'End this turn, /quit, wait for this CLI to exit, then codex resume with this conversation\'s trusted native ID, then Continue.')
             return {**status, 'status': 'native_reload_required', 'membership_started': False,
-                    'next_action': 'end_turn_then_reload_same_conversation',
-                    'notice': 'Setup saved. End this turn with the normal native reload instruction: /quit, then codex resume with this conversation\'s trusted native ID, then Continue. Wait for the old CLI to exit before resuming. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not retry tools or restart the shared daemon to bypass reload.'}
+                    'next_action': 'try_native_reload_same_conversation',
+                    'reload_requirement': 'fresh_native_plugin_process',
+                    'manual_fallback': {'when': 'no_supported_automatic_option', 'instruction': fallback},
+                    'notice': 'Setup saved. First inspect and use supported native in-session plugin reload controls for this same conversation. A queued refresh is not completion: follow the host turn boundary, then verify setup status from a fresh native plugin process. Ask the human to restart only when no supported automatic option is available or it cannot satisfy this requirement; explain the observed limitation. Preserve native approvals and denials. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not retry tools in this old process, call private host RPCs, launch a replacement conversation, or restart the shared daemon to bypass reload.'}
         return status
 
     @staticmethod

@@ -194,6 +194,8 @@ def serve(home, source, target):
                     args = params.get('arguments', {})
                     identity = str(args.get(PROOF, '')).partition('.')[0]
                     value = request(home, identity, 'call', name=params.get('name'), args=args)
+                    if params.get('name') == 'pantheon_doctor':
+                        value['loaded_portable_version'] = HERMES_BROKER_VERSION
                     last_bridge[0] = identity
                     result = {'content': [{'type': 'text', 'text': json.dumps(value)}], 'structuredContent': value,
                               'isError': value.get('status') == 'blocked'}

@@ -61,7 +61,7 @@ def validate_discovery(value, trusted_origin, runtime, *, now=None):
         raise Blocked("Artifact must be immutable same-origin HTTPS")
     host = package.get("host")
     legacy = value["schema"] == LEGACY_SCHEMA
-    if (not legacy and runtime == 'codex' and isinstance(host, dict)
+    if (not legacy and runtime in _NATIVE_SURFACES and isinstance(host, dict)
             and host.get('compatibility') == 'native-capabilities'):
         if (set(host) != {'compatibility', 'tested_version'}
                 or not isinstance(host['tested_version'], str) or not 0 < len(host['tested_version']) <= 128):
@@ -80,7 +80,7 @@ def matches_native_host(package, binding, *, surfaces=None):
     runtime = package.get("runtime")
     return (runtime in _NATIVE_SURFACES and binding.get("runtime") == runtime
             and (package['host'].get('runtime_version') == binding.get('version')
-                 or (runtime == 'codex' and package['host'].get('compatibility') == 'native-capabilities'
+                 or (runtime in _NATIVE_SURFACES and package['host'].get('compatibility') == 'native-capabilities'
                      and isinstance(binding.get('version'), str) and 0 < len(binding['version']) <= 128))
             and binding.get("surface") in (surfaces if surfaces is not None else [_NATIVE_SURFACES[runtime]]))
 

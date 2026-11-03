@@ -19,8 +19,14 @@ from . import notification_policy
 from .worker import Blocked
 from . import hermes_tools, hermes_limits, hermes_setup, hermes_review, hermes_incoming
 from .hermes_limits import trial_allowed
+from . import hermes_compatibility
 from .hermes_audit import Audit
 from .read_retry import ReadRetry
+from .version import HERMES_BROKER_VERSION
+from .broker.package import metadata as _package_metadata
+
+# Captured when this code loads, never inferred from a later installer receipt.
+LOADED_CONNECTOR_VERSION = HERMES_BROKER_VERSION if _package_metadata() else hermes_setup.VERSION
 
 NOTICE = ("Pantheon has pending input for the connected conversation. Call pantheon_receive "
           "using this connection and notice_token. On stale_notice_noop, do nothing: no reply or new wait. This notice contains no peer "
@@ -227,8 +233,7 @@ class NativePlugin:
     def preflight(self, binding):
         if self.stop.is_set():
             raise Blocked("Native plugin was unloaded; use only the currently loaded instance")
-        if self.commit != HERMES_COMMIT:
-            raise Blocked("Hermes build differs from the inspected plugin contract")
+        hermes_compatibility.require_delivery(self.ctx)
         if binding != self.binding(binding["session"]):
             raise Blocked("Native runtime identity changed")
         with self.lock:
@@ -244,6 +249,7 @@ class NativePlugin:
 
     def doctor(self, session_id):
         result = dict(runtime="hermes", version=self.version, profile=self.profile,
+                      loaded_connector_version=LOADED_CONNECTOR_VERSION,
                       native_session_known=bool(session_id), receipt_mode="explicit_scoped_receive_then_agent_ack",
                       wake_mode="content_free_native_notice", released=False)
         try:
@@ -261,7 +267,7 @@ class NativePlugin:
                 from .broker.bootstrap import read
                 result['bootstrap'] = read(config, config['prepared_connection'], binding)
             result['provider_scope'] = dict(reviewed=config.get('reviewed_provider'), account_verified=False,
-                limitation='The pinned Hermes hooks expose provider/model, not a stable account identity or atomic dispatch-time account check.')
+                limitation='The Hermes hooks expose provider/model, not a stable account identity or atomic dispatch-time account check.')
             self.check_usage(config, binding)
             if result['trial_authorized']:
                 self.require_incoming()
@@ -872,13 +878,21 @@ class NativePlugin:
 def register(ctx):
     """Called only by Hermes's approved native plugin loader."""
     import hermes_constants
-    # Inspect the pinned installed source using Git, not host-private registries.
+    hermes_compatibility.require_registration(ctx)
+    # Record host identity for this connection; this is not a release whitelist.
     root = pathlib.Path(hermes_constants.__file__).resolve().parent
-    commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
-    dirty = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, check=True).stdout.strip()
+    try:
+        commit = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+        dirty = subprocess.run(["git", "-C", str(root), "status", "--porcelain", "--untracked-files=no"], capture_output=True, text=True, check=True).stdout.strip()
+        version = "git:" + commit + ("+dirty" if dirty else "")
+    except (OSError, subprocess.SubprocessError):
+        from hermes_cli import __version__
+        commit, version = "", "hermes:" + str(__version__)
+    if not version or len(version) > 128:
+        raise Blocked("Hermes host identity is unavailable")
     home = hermes_constants.get_hermes_home()
     setup = ctx.get_config("setup_file", str(home / "pantheon" / "setup.json"))
-    plugin = NativePlugin(ctx, setup, "git:" + commit, commit if not dirty else "dirty",
+    plugin = NativePlugin(ctx, setup, version, commit,
                           prepare_root=home / "pantheon" / "hosted")
     # Public content API: a useful workflow, read-only and owned/unloaded by Hermes.
     # Registration alone does not start a receiver, redeem, inject, or grant access.

@@ -7,3 +7,8 @@ import _ "embed"
 //
 //go:embed hosted-onboarding-v3-desktop.md
 var HostedOnboardingV3Desktop []byte
+
+// Native-first updates belong to 0.9.8+; published earlier guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-native-refresh.md
+var HostedOnboardingV3NativeRefresh []byte

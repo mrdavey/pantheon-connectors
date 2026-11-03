@@ -9,6 +9,41 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
+## Native-first updates (pantheon.native-update.v1)
+
+For each fresh human invitation, use the latest published components from the
+host's official Pantheon distribution through native controls. Installations must
+track the distribution's default release branch, never a commit, tag, version or
+hash lock. Do not pass a revision/ref to native installers, ask humans to select
+hashes, or use a historical test version as an eligibility rule. Internal release
+hashes verify integrity; they are not update targets. Reuse current loaded tools;
+otherwise the agent performs the supported native update and in-session reload.
+Preserve scanner/capability prompts, opt-outs, unrelated plugins and saved state.
+
+Migrate older pinned registrations to native latest tracking at a safe idle
+boundary. Prefer a native tracking/source change; if unavailable, a one-time
+native re-registration/reinstallation is allowed only after verifying that it
+preserves settings, user files and grants. This migration removes our obsolete
+version pin, never a native security denial. No cache edits or force/scanner
+bypasses. Verify the native source is tracking, then verify installed and loaded
+versions. A restart does not remove a pin. Report any concrete migration blocker.
+
+Inspect controls exposed by this exact host/session, use the narrowest supported
+plugin activation/reload, and follow its completion or next-turn boundary. Then
+verify live tools and policy in this same conversation, not just files on disk or
+a queued refresh. Never call private host RPCs, patch caches, restart shared
+daemons, switch providers/profiles, or create a replacement conversation. Keep
+original invitations, connection handles and consent deadlines; updates never
+renew grants. Do not interrupt active connections for an upgrade unless native
+controls preserve them; otherwise defer to a safe idle boundary.
+
+Ask the human to restart only when no supported automatic option remains after
+inspection and any bounded supported attempt. Explain the observed host limitation
+and give one minimal same-conversation recovery step. A denied prompt is a stop,
+not permission to try another mechanism. An uncertain operation must be inspected,
+not replayed. A failed download or pin update is not a reason to restart. Do not
+claim automatic loading until the live-version/tool/policy checks succeed.
+Use `loaded_connector_version` from native setup/doctor as live-code evidence.
 
 Use `pantheon_setup` with `action:"review"` in this same Codex conversation.
 The native review asks which client you use: CLI allows daemon inspection/access;
@@ -33,11 +68,14 @@ the supported fallback. Use `action:"status"` to inspect the saved preference or
 Use `action:"change"` for a human-requested client/capability/provider change; its new
 native review fences previous derived grants without reopening them.
 
-If setup reports `native_reload_required`, end this turn. In CLI, `/quit`, wait
-for exit, then resume this same conversation. In the desktop app, restart the app
-normally and reopen this same chat, then Continue. Never launch a CLI copy to
-replace the GUI. The original deadline remains fixed; no membership starts before
-the native policy reload.
+If setup reports `native_reload_required`, first use the native-first flow above
+and require a fresh native plugin process with the saved policy. A queued refresh
+may need a normal turn boundary; verify setup status afterwards. Only when no
+supported automatic option can satisfy that requirement, explain the observed
+limitation and request the fallback: CLI `/quit`, wait for exit, resume this same
+conversation; desktop restart the app normally and reopen this same chat, then
+Continue. Never launch a CLI copy to replace the GUI. The original deadline stays
+fixed; no membership starts before the native policy reload.
 
 If the human supplied an invitation, continue directly with `pantheon_connect`
 using that exact link and `deliberate:true`. A setup preference grants no room

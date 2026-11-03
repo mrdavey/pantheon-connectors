@@ -4,7 +4,7 @@
   "files": {
     "README.md": {
       "mode": "100644",
-      "sha256": "a9768c268d5f85f4bfab5a1ecab26f639dd57cf00d879d15250e7aff99e2f652",
+      "sha256": "58ff4022a719e7182b329195d874d01ebdfd03e643f31d35972abb05f70030c0",
       "source_path": "packaging/HERMES-README.md"
     },
     "__init__.py": {
@@ -14,7 +14,7 @@
     },
     "broker-package.json": {
       "mode": "100644",
-      "sha256": "f037b7e72380b9484b1312ef2d780999cca1bc723c8ee9c1d9cd6d91ebc41ff4",
+      "sha256": "7a39ba9414ebced8d1c5b849ac82eef5938f5dc70f4241a18ab6b7460cc8326b",
       "source_path": "packaging/HERMES-BROKER-package.json"
     },
     "codex-ui/panel.html": {
@@ -74,7 +74,7 @@
     },
     "connectors/pantheon_connectors/broker/hermes_live.py": {
       "mode": "100644",
-      "sha256": "7b31748bc2744ccb40fee7e5fc389fbb324ebc0a2ab284bdde9c3083d77c7518",
+      "sha256": "ca1196df5ec85056eb44345e8d6b5273a53f823ac40341af0139d091be949f7f",
       "source_path": "connectors/pantheon_connectors/broker/hermes_live.py"
     },
     "connectors/pantheon_connectors/broker/package.py": {
@@ -149,7 +149,7 @@
     },
     "connectors/pantheon_connectors/codex_hosted.py": {
       "mode": "100644",
-      "sha256": "9713994fb347b6ae8bf1995df0b2ef4e6cbc28827c4eb426fd82b9f3c241d4e1",
+      "sha256": "4703e3cb8b80bc6fd7b9ab5621d95ba3fe4da88fd641ba1df36b146f8825a410",
       "source_path": "connectors/pantheon_connectors/codex_hosted.py"
     },
     "connectors/pantheon_connectors/codex_mcp.py": {
@@ -212,6 +212,11 @@
       "sha256": "2d2401ebfad8b1c4b512b730a27896828e5475cf247f41584d3302030038b46f",
       "source_path": "connectors/pantheon_connectors/hermes_audit.py"
     },
+    "connectors/pantheon_connectors/hermes_compatibility.py": {
+      "mode": "100644",
+      "sha256": "b7004810b5fcab647e764e9b18552d7c8fa87142f18631116dce6aa3c22d0f9c",
+      "source_path": "connectors/pantheon_connectors/hermes_compatibility.py"
+    },
     "connectors/pantheon_connectors/hermes_incoming.py": {
       "mode": "100644",
       "sha256": "6bb6ba00f6e1f2a2d7260b254757e29936a20dbeedd58ef04d1270fbea8c9105",
@@ -224,7 +229,7 @@
     },
     "connectors/pantheon_connectors/hermes_plugin.py": {
       "mode": "100644",
-      "sha256": "efa131fe2fdc092ae8b1e82ff517b294846905ba81ec6dc771ca831439709046",
+      "sha256": "62ab71bb9cb3d21d68f727396b516b7ae6783cf80044bc5186e04154ad08d384",
       "source_path": "connectors/pantheon_connectors/hermes_plugin.py"
     },
     "connectors/pantheon_connectors/hermes_review.py": {
@@ -244,7 +249,7 @@
     },
     "connectors/pantheon_connectors/hosted_discovery.py": {
       "mode": "100644",
-      "sha256": "6c77ffa654174381fe8828ecca461b5bd583ea8b9fc687f56617d70ee6286a1f",
+      "sha256": "9a3305fdae458bcbbbc35ff2b8a7f0e8665565e071796ab262870bf08610363f",
       "source_path": "connectors/pantheon_connectors/hosted_discovery.py"
     },
     "connectors/pantheon_connectors/hosted_v3.py": {
@@ -284,7 +289,7 @@
     },
     "connectors/pantheon_connectors/onboarding.py": {
       "mode": "100644",
-      "sha256": "9b6c5b4348fa32e3a8760c114c63cfe83f5f2c0c8b78f6bfee12fc47b62cf878",
+      "sha256": "7057f2488ae9867170b09c6f57fe6d6e9142c5febf19a4eabc81284c82607982",
       "source_path": "connectors/pantheon_connectors/onboarding.py"
     },
     "connectors/pantheon_connectors/operational.py": {
@@ -319,7 +324,7 @@
     },
     "connectors/pantheon_connectors/skills/collaborate/SKILL.md": {
       "mode": "100644",
-      "sha256": "739816737443f8f562556df17a100e37ac7488807e50a4d9830d00365ce15de0",
+      "sha256": "45608364bd899187f882337465b48d8cc9acacf1ba438d1514077ac2e22da5c1",
       "source_path": "connectors/pantheon_connectors/skills/collaborate/SKILL.md"
     },
     "connectors/pantheon_connectors/state.py": {
@@ -344,7 +349,7 @@
     },
     "connectors/pantheon_connectors/version.py": {
       "mode": "100644",
-      "sha256": "13a650c8393ec987aa6777b9827f79a0098a0c3b72e812605ab60971e09e8cdd",
+      "sha256": "ba42effe56f09785073afb8cf1d3422e1a94b950cca3247584611f902494dbc4",
       "source_path": "connectors/pantheon_connectors/version.py"
     },
     "connectors/pantheon_connectors/worker.py": {
@@ -404,7 +409,7 @@
     },
     "connectors/tests/test_codex_desktop.py": {
       "mode": "100644",
-      "sha256": "72154788c1e7d046829a20679b8ad9442d5c8fa78f9e72e74f6ca1ca22a1b997",
+      "sha256": "48e569bdccc33e2c794b2e9a6966249b276717dba48c8da8a8b3df824d1374c1",
       "source_path": "connectors/tests/test_codex_desktop.py"
     },
     "connectors/tests/test_codex_hosted.py": {
@@ -429,7 +434,7 @@
     },
     "connectors/tests/test_codex_setup_connect.py": {
       "mode": "100644",
-      "sha256": "ba55c22222139515dfed90109082144f92e3facbb13de55723c37c2fe86b11d8",
+      "sha256": "2c79a1e20e474b62998ab03530e0afc27198283cf4d41c568a89c2c88dd54bea",
       "source_path": "connectors/tests/test_codex_setup_connect.py"
     },
     "connectors/tests/test_codex_setup_policy.py": {
@@ -509,7 +514,7 @@
     },
     "connectors/tests/test_hermes_live.py": {
       "mode": "100644",
-      "sha256": "6930c01c1c6d7fcee9ba5792b5375a30707a4bb08b91a2a575a9b920a6f4ef30",
+      "sha256": "a1ab254ef46bdf26d359ee650a5dc4733e30c579606bd064dc53f81bafb1015a",
       "source_path": "connectors/tests/test_hermes_live.py"
     },
     "connectors/tests/test_hermes_notification_contract.py": {
@@ -529,7 +534,7 @@
     },
     "connectors/tests/test_hermes_registration.py": {
       "mode": "100644",
-      "sha256": "41bd4c3ca6b06718cc74bb7a04861469d2cccca969d2c3b3518af7088f1bf6b5",
+      "sha256": "f3291408cedec1015492b7b5e67c4c68838c073c773b2fd8e114eba082463de1",
       "source_path": "connectors/tests/test_hermes_registration.py"
     },
     "connectors/tests/test_hermes_terminal_cleanup.py": {
@@ -544,7 +549,7 @@
     },
     "connectors/tests/test_hosted_discovery.py": {
       "mode": "100644",
-      "sha256": "f59dec2da40117f97e7ee9b3e611bd978dc7ae759cfeec79ef1e75b9ae973e6a",
+      "sha256": "96c8b652c87f43e35c65de0eec2b101988e7b12da0871664cc3f7f2236588052",
       "source_path": "connectors/tests/test_hosted_discovery.py"
     },
     "connectors/tests/test_hosted_v3.py": {
@@ -639,7 +644,7 @@
     },
     "plugin.yaml": {
       "mode": "100644",
-      "sha256": "a9045451f22c34686468132489cbfebefbbbca8b00b5b2a392c4baa2f4ea298f",
+      "sha256": "c7c7d337cc953164b6357f7785fe5d2bdeddd8e6d2f36c62413f5711276ded73",
       "source_path": "packaging/HERMES-BROKER-plugin.yaml"
     },
     "portable/connectors/pantheon_connectors/__init__.py": {
@@ -689,7 +694,7 @@
     },
     "portable/connectors/pantheon_connectors/broker/hermes_live.py": {
       "mode": "100644",
-      "sha256": "7b31748bc2744ccb40fee7e5fc389fbb324ebc0a2ab284bdde9c3083d77c7518",
+      "sha256": "ca1196df5ec85056eb44345e8d6b5273a53f823ac40341af0139d091be949f7f",
       "source_path": "connectors/pantheon_connectors/broker/hermes_live.py"
     },
     "portable/connectors/pantheon_connectors/broker/package.py": {
@@ -764,7 +769,7 @@
     },
     "portable/connectors/pantheon_connectors/codex_hosted.py": {
       "mode": "100644",
-      "sha256": "9713994fb347b6ae8bf1995df0b2ef4e6cbc28827c4eb426fd82b9f3c241d4e1",
+      "sha256": "4703e3cb8b80bc6fd7b9ab5621d95ba3fe4da88fd641ba1df36b146f8825a410",
       "source_path": "connectors/pantheon_connectors/codex_hosted.py"
     },
     "portable/connectors/pantheon_connectors/codex_mcp.py": {
@@ -827,6 +832,11 @@
       "sha256": "2d2401ebfad8b1c4b512b730a27896828e5475cf247f41584d3302030038b46f",
       "source_path": "connectors/pantheon_connectors/hermes_audit.py"
     },
+    "portable/connectors/pantheon_connectors/hermes_compatibility.py": {
+      "mode": "100644",
+      "sha256": "b7004810b5fcab647e764e9b18552d7c8fa87142f18631116dce6aa3c22d0f9c",
+      "source_path": "connectors/pantheon_connectors/hermes_compatibility.py"
+    },
     "portable/connectors/pantheon_connectors/hermes_incoming.py": {
       "mode": "100644",
       "sha256": "6bb6ba00f6e1f2a2d7260b254757e29936a20dbeedd58ef04d1270fbea8c9105",
@@ -839,7 +849,7 @@
     },
     "portable/connectors/pantheon_connectors/hermes_plugin.py": {
       "mode": "100644",
-      "sha256": "efa131fe2fdc092ae8b1e82ff517b294846905ba81ec6dc771ca831439709046",
+      "sha256": "62ab71bb9cb3d21d68f727396b516b7ae6783cf80044bc5186e04154ad08d384",
       "source_path": "connectors/pantheon_connectors/hermes_plugin.py"
     },
     "portable/connectors/pantheon_connectors/hermes_review.py": {
@@ -859,7 +869,7 @@
     },
     "portable/connectors/pantheon_connectors/hosted_discovery.py": {
       "mode": "100644",
-      "sha256": "6c77ffa654174381fe8828ecca461b5bd583ea8b9fc687f56617d70ee6286a1f",
+      "sha256": "9a3305fdae458bcbbbc35ff2b8a7f0e8665565e071796ab262870bf08610363f",
       "source_path": "connectors/pantheon_connectors/hosted_discovery.py"
     },
     "portable/connectors/pantheon_connectors/hosted_v3.py": {
@@ -899,7 +909,7 @@
     },
     "portable/connectors/pantheon_connectors/onboarding.py": {
       "mode": "100644",
-      "sha256": "9b6c5b4348fa32e3a8760c114c63cfe83f5f2c0c8b78f6bfee12fc47b62cf878",
+      "sha256": "7057f2488ae9867170b09c6f57fe6d6e9142c5febf19a4eabc81284c82607982",
       "source_path": "connectors/pantheon_connectors/onboarding.py"
     },
     "portable/connectors/pantheon_connectors/operational.py": {
@@ -934,7 +944,7 @@
     },
     "portable/connectors/pantheon_connectors/skills/collaborate/SKILL.md": {
       "mode": "100644",
-      "sha256": "739816737443f8f562556df17a100e37ac7488807e50a4d9830d00365ce15de0",
+      "sha256": "45608364bd899187f882337465b48d8cc9acacf1ba438d1514077ac2e22da5c1",
       "source_path": "connectors/pantheon_connectors/skills/collaborate/SKILL.md"
     },
     "portable/connectors/pantheon_connectors/state.py": {
@@ -959,7 +969,7 @@
     },
     "portable/connectors/pantheon_connectors/version.py": {
       "mode": "100644",
-      "sha256": "13a650c8393ec987aa6777b9827f79a0098a0c3b72e812605ab60971e09e8cdd",
+      "sha256": "ba42effe56f09785073afb8cf1d3422e1a94b950cca3247584611f902494dbc4",
       "source_path": "connectors/pantheon_connectors/version.py"
     },
     "portable/connectors/pantheon_connectors/worker.py": {
@@ -974,7 +984,7 @@
     },
     "portable/plugin.json": {
       "mode": "100644",
-      "sha256": "17a90873a67937fa9257f13fab1380ff9ddfd79177b16cf47443f6e96a0c033c",
+      "sha256": "bcca48af5db549c60cc7cdf92ac648568af6cfbf40dd244a15f3da06d31c242c",
       "source_path": "packaging/hermes-portable/plugin.json"
     },
     "portable/protocol/joining-v1.json": {
@@ -1000,5 +1010,5 @@
   },
   "format": "pantheon.hermes-distribution.v1",
   "scope": "Native Hermes entrypoint, collaboration skill, unchanged shared connector code, Codex panel resources, offline tool-output test helper, protocol and all connector tests. Only plugin.yaml tools and the Pantheon collaboration skill are registered.",
-  "source_commit": "5f49fb907efc10f55a46dabdc273e63aef2af5fc"
+  "source_commit": "989cdf95b3c23f540f1279e89b4f919f0b066844"
 }

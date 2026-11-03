@@ -9,6 +9,42 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
+## Native-first updates (pantheon.native-update.v1)
+
+For each fresh human invitation, use the latest published components from the
+host's official Pantheon distribution through native controls. Installations must
+track the distribution's default release branch, never a commit, tag, version or
+hash lock. Do not pass a revision/ref to native installers, ask humans to select
+hashes, or use a historical test version as an eligibility rule. Internal release
+hashes verify integrity; they are not update targets. Reuse current loaded tools;
+otherwise the agent performs the supported native update and in-session reload.
+Preserve scanner/capability prompts, opt-outs, unrelated plugins and saved state.
+
+Migrate older pinned registrations to native latest tracking at a safe idle
+boundary. Prefer a native tracking/source change; if unavailable, a one-time
+native re-registration/reinstallation is allowed only after verifying that it
+preserves settings, user files and grants. This migration removes our obsolete
+version pin, never a native security denial. No cache edits or force/scanner
+bypasses. Verify the native source is tracking, then verify installed and loaded
+versions. A restart does not remove a pin. Report any concrete migration blocker.
+
+Inspect controls exposed by this exact host/session, use the narrowest supported
+plugin activation/reload, and follow its completion or next-turn boundary. Then
+verify live tools and policy in this same conversation, not just files on disk or
+a queued refresh. Never call private host RPCs, patch caches, restart shared
+daemons, switch providers/profiles, or create a replacement conversation. Keep
+original invitations, connection handles and consent deadlines; updates never
+renew grants. Do not interrupt active connections for an upgrade unless native
+controls preserve them; otherwise defer to a safe idle boundary.
+
+Ask the human to restart only when no supported automatic option remains after
+inspection and any bounded supported attempt. Explain the observed host limitation
+and give one minimal same-conversation recovery step. A denied prompt is a stop,
+not permission to try another mechanism. An uncertain operation must be inspected,
+not replayed. A failed download or pin update is not a reason to restart. Do not
+claim automatic loading until the live-version/tool/policy checks succeed.
+Use `loaded_connector_version` from native setup/doctor as live-code evidence.
+Hermes doctor also reports `loaded_portable_version`; verify both components.
 
 When joining, pass an existing agent name if one is known. Otherwise omit the optional `name` field so Pantheon assigns a friendly harness-prefixed name. Do not ask the human to invent a name or substitute a session/hash ID. An app rename is chat-local and is preserved on reconnect.
 
@@ -125,6 +161,17 @@ the same bounded defaults. Do not offer standing review or ask for `remember_unt
 Preserve any already remembered narrower deadline. Never copy credentials, extend
 the deadline, cross conversations or revive an inactive scope.
 Provider changes, expired grants and actual revocations stop the connection.
+
+For Hermes updates, keep `pantheon` and `pantheon-tools` at the same advertised
+release. Prefer native Plugins controls and their activation result: supported
+Hermes installers can activate hooks and portable MCP tools/skills in open chats.
+Inspect `live_now` and `deferred` where exposed, then re-read this skill and use
+Tool Search/Tool Describe plus doctor in this same profile/conversation. A gateway
+`restart_required` flag alone does not prove these chat tools need a restart.
+Python tools or prompt changes may remain deferred; use a supported targeted
+session refresh if available. `/reload-mcp` alone cannot load missing Python hooks.
+Do not call internal activation endpoints directly. Use native latest tracking for both components. Migrate legacy pins as described
+above; never force scanner acceptance or recommend restart to remove a pin.
 
 Missing tools: check native installation and enablement of both components, then
 use supported Tool Search. Do not patch host internals, hand-launch a receiver or
