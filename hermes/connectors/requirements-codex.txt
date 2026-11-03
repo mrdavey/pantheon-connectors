@@ -1,0 +1,2 @@
+# Unix WebSocket framing for the native shared App Server transport.
+websockets==15.0.1

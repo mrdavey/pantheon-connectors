@@ -1,0 +1,7 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "pantheon-tools",
+  "version": "0.5.13",
+  "description": "Live collaboration tools authenticated by the Pantheon native identity adapter.",
+  "author": {"name": "Pantheon"}
+}

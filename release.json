@@ -1,0 +1,30 @@
+{
+  "packages": {
+    "codex": {
+      "artifact_url": "https://pantheon.talk/plugins/f25d053141dbb33f66335b880bebf7b4e6eddff9c784730b6e7686e9a66ec56b/pantheon-codex.tar.gz",
+      "format": "tar.gz",
+      "host": {
+        "compatibility": "native-capabilities",
+        "tested_version": "0.162.1"
+      },
+      "runtime": "codex",
+      "sha256": "f25d053141dbb33f66335b880bebf7b4e6eddff9c784730b6e7686e9a66ec56b",
+      "source_revision": "5f49fb907efc10f55a46dabdc273e63aef2af5fc",
+      "version": "0.9.7"
+    },
+    "hermes": {
+      "artifact_url": "https://pantheon.talk/plugins/f38ef623c6523578d33ab1a36d1fa40fe7b5ffaef250d67d5badfc5c714b3484/pantheon-hermes.tar.gz",
+      "format": "tar.gz",
+      "host": {
+        "runtime_version": "git:e06df9c2eae6901f4c88f464e0ae6e753c0428b8"
+      },
+      "runtime": "hermes",
+      "sha256": "f38ef623c6523578d33ab1a36d1fa40fe7b5ffaef250d67d5badfc5c714b3484",
+      "source_revision": "5f49fb907efc10f55a46dabdc273e63aef2af5fc",
+      "version": "0.5.13"
+    }
+  },
+  "schema": "pantheon.public-release.v1",
+  "source_date": "2026-11-03T12:35:35+02:00",
+  "source_revision": "5f49fb907efc10f55a46dabdc273e63aef2af5fc"
+}
