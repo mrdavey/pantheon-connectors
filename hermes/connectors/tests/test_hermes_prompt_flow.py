@@ -14,13 +14,13 @@ class PromptFlow(unittest.TestCase):
     prepare = defaults.DurationDefault.prepare
     authorize = defaults.DurationDefault.authorize
 
-    def test_fresh_setup_uses_one_review_not_preparation_duration_start_questions(self):
+    def test_fresh_setup_continues_human_invitation_without_extra_confirmation(self):
         prepared=self.prepare();setup=Path(prepared['setup_file']);before=setup.read_bytes()
         flow=prepared['onboarding']
-        self.assertEqual(flow['pantheon_confirmations'],1)
+        self.assertEqual(flow['pantheon_confirmations'],0)
         self.assertEqual(flow['extra_preparation_duration_start_confirmations'],0)
         self.assertEqual(flow['proposed_duration_seconds'],3600)
-        self.assertEqual(flow['next_action'],'preview_scope_then_one_missing_approval')
+        self.assertEqual(flow['next_action'],'continue_deliberate_human_invitation')
         self.assertEqual(flow['host_prompts'],'native_host_managed_not_bypassed')
         self.assertIn('provider/incoming scope',flow['count_condition'])
         self.assertIn('room/goal and usage checks',prepared['notice'])
@@ -53,7 +53,7 @@ class PromptFlow(unittest.TestCase):
         first=self.prepare();self.authorize(first)
         second=self.prepare(self.link.replace('Q'*40,'z'*40))
         self.assertNotEqual(first['connection'],second['connection'])
-        self.assertEqual(second['onboarding']['pantheon_confirmations'],1)
+        self.assertEqual(second['onboarding']['pantheon_confirmations'],0)
         config=load_private(Path(first['setup_file']));before=copy.deepcopy(config)
         changed=hermes_review.progress(config,self.binding | dict(session='different'))
         self.assertEqual(changed['next_action'],'check_exact_saved_scope')
@@ -126,8 +126,8 @@ class PromptFlow(unittest.TestCase):
 
     def test_shipped_guidance_counts_native_prompts_separately_and_continues_bundled_yes(self):
         skill=' '.join((Path(hermes_review.__file__).parent/'skills/collaborate/SKILL.md').read_text().split())
-        for text in ('If the exact scope is already approved, include consent immediately',
-                     'otherwise connect returns the preview and one missing review',
+        for text in ('A deliberate human-pasted Pantheon invitation is the instruction',
+                     'Do not ask another Pantheon installation',
                      'normal native permission prompts', 'existing model/provider',
                      'No separate prepare, authorize, join',
                      'Provider changes, expired grants and actual revocations stop the connection'):

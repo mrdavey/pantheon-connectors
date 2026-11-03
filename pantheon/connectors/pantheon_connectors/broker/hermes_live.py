@@ -33,7 +33,7 @@ def fingerprint(name, args):
 
 def definitions(catalogue):
     from .. import hermes_setup, hermes_tools
-    from .connect import TOOL
+    from .connect import HERMES_TOOL as TOOL
     tools = catalogue.tools()
     names = {tool['name'] for tool in tools}
     return [TOOL, *tools, *(tool for tool in hermes_tools.TOOLS if tool['name'] not in names), *hermes_setup.TOOLS]

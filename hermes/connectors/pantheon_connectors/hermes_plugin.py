@@ -912,7 +912,7 @@ def register(ctx):
         plugin.catalogue.watch(plugin.broker_active, lambda: None)
         ctx.on_unload(plugin.catalogue.close)
     names = {tool['name'] for tool in tools}
-    from .broker.connect import TOOL as CONNECT_TOOL
+    from .broker.connect import HERMES_TOOL as CONNECT_TOOL
     for tool in [CONNECT_TOOL, *tools, *(tool for tool in hermes_tools.TOOLS if tool['name'] not in names), *hermes_setup.TOOLS]:
         def handler(args, session_id="", _name=tool["name"], **kwargs):
             return plugin.handle(_name, args, session_id=session_id, **kwargs)

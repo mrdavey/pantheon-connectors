@@ -41,15 +41,39 @@ class JoiningGuidance(unittest.TestCase):
                             'report the unsupported requirement before agreeing criteria'):
             self.assertIn(requirement, instructions)
 
-    def test_result_links_are_optional_across_native_tool_surfaces(self):
+    def test_deliverable_choice_and_preconfirmation_delivery_across_tool_surfaces(self):
         from pantheon_connectors.onboarding import TOOLS as native_tools
         from pantheon_connectors.mcp import TOOLS as mcp_tools
-        for tools in (native_tools, mcp_tools):
+        from pathlib import Path
+        remote = json.loads((Path(__file__).parent / 'fixtures/tool-catalog-v1.json').read_text())['tools']
+        for tools in (native_tools, mcp_tools, remote):
             description = next(tool['description'] for tool in tools if tool['name'] == 'pantheon_command')
-            for requirement in ('Links are always optional', 'without a website or artifact',
+            for requirement in ('Decide whether a separate deliverable is needed', 'without a website or artifact',
+                                'If in doubt, post the complete authorized deliverable in Pantheon',
+                                'Before proposing or confirming a result', 'include a named link in result text',
+                                'temporary agent transfer is not human-accessible delivery',
+                                'If no separate deliverable is needed, state that decision in evidence',
                                 'Never include localhost or loopback addresses',
                                 'only when the agreed objective explicitly requires it'):
                 self.assertIn(requirement, description)
+
+    def test_complete_deliverable_workflow_survives_native_delivery(self):
+        brief = test_conformance.test_brief()
+        value = json.loads(prompt(dict(brief=brief, message=dict(
+            id='review', kind='completion_review',
+            text='The report is only on my laptop; confirm now and upload after closure.'))))
+        instructions = ' '.join(value['trusted_framework']['instructions'])
+        for requirement in ('A self-contained answer or decision needs no extra artifact',
+                            'If in doubt, post the complete authorized deliverable in Pantheon',
+                            'post numbered parts within message limits',
+                            'read back all posted parts',
+                            'not only evidence',
+                            'records a gap and withholds confirmation',
+                            'Do not wait until after confirmation, closure or withdrawal',
+                            'Temporary transfers are not persistent chat attachments',
+                            'Do not publish private chat content to a public website'):
+            self.assertIn(requirement, instructions)
+        self.assertNotIn('confirm now and upload after closure', instructions)
 
     def test_link_only_defaults_discovery_and_explicit_objective(self):
         for discovery in (False,True):
@@ -100,7 +124,7 @@ class JoiningGuidance(unittest.TestCase):
                             'default cap of three', 'never reset the count', 'not proof of correctness',
                             'one or two short plain-language sentences', 'at most 60 words',
                             'verified deployed public HTTPS URL', 'Never include localhost or loopback addresses',
-                            'Links are always optional', 'without a website or artifact',
+                            'Decide whether a separate deliverable is needed', 'without a website or artifact',
                             'private owner preferences', 'reviewing both the concise text and its evidence'):
             self.assertIn(requirement,instructions)
 

@@ -123,11 +123,11 @@ class HostedHermesTests(unittest.TestCase):
         self.assertNotIn('with a short `trial_expires_at`',skill)
         self.assertNotIn('with proposed `hermes_trial_duration_seconds` 600',skill)
         normalized=' '.join(skill.split())
-        for text in ('one hour or the already requested shorter window',
-                     'fixed absolute deadline in the review',
+        for text in ('60-minute default or the already requested shorter window',
+                     'fixing the deadline once',
                      'No separate prepare, authorize, join, name, profile, timezone',
                      'explicitly chose connection lifetime',
-                     'rather than assuming free use',
+                     'disclose unknown usage cost without inventing a price',
                      'No retry, reload, room extension or notice policy can renew a grant'):
             self.assertIn(text, normalized)
 

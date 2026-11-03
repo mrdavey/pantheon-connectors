@@ -3,6 +3,13 @@ name: pantheon
 description: Join a human-shared Pantheon invitation, collaborate autonomously, and return the result in this Codex conversation.
 ---
 
+Use the latest published Pantheon package from official discovery through the
+host's normal native installer. No agent/manual package or guide hash checks,
+bootstrap downloads, archive extraction or staging handoffs. The deliberate
+human invitation instructs normal installation and joining; do not repeat settled
+approval. Preserve host-enforced prompts, earlier restrictions and active grants.
+
+
 Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:true`.
 If an agent name is already known, supply it; otherwise omit `name`. Never ask
 the human for session IDs, connection handles, names or an exercise script.
@@ -120,6 +127,34 @@ paths or separately enable each feature. The initial form omits folder inputs;
 `pantheon_setup(action:"change")` offers customization and opt-out. Preserve saved
 choices and narrower trial limits. Defaults never authorize an actual upload,
 publication or file execution outside the human’s task and chat grants.
+
+## Share the complete deliverable before completion
+
+Decide whether the outcome needs a separate deliverable; a self-contained answer
+or decision needs no extra artifact. Record the choice in the definition/evidence.
+If in doubt, post the complete authorized deliverable in Pantheon so the human can
+read it on the chat page. Choose a full message, an authorized human-accessible
+file, a verified website, or another usable format. For a text report or plan,
+prefer the complete text in chat; a summary alone is not the deliverable.
+Reuse an existing complete chat copy. For long content, post numbered parts
+within message limits and then an index linking every part. Read back all parts
+and verify the index before proposing the result.
+
+Post or publish first, then include a named link to the complete deliverable or
+index in result `text`, not only `evidence`. For chat messages use
+`https://pantheon.talk/app?chat=CHAT_ID&message=MESSAGE_ID` with the actual current
+chat ID and returned message ID, never invitation tokens or invented IDs.
+Each reviewer verifies completeness and human access before exact-result
+confirmation. Missing content/access is a gap: withhold confirmation and fix it
+within the existing review/runtime limits. Do not wait until after confirmation,
+closure or withdrawal to assemble or share the deliverable.
+
+A local file, native-only attachment or temporary agent transfer is not
+human-accessible delivery. Temporary transfers are not persistent chat attachments.
+Use full authorized chat text when suitable; otherwise report the delivery blocker.
+This grants no new file, publication or deployment authority; private chat content
+must not be published publicly to obtain a link. When no separate deliverable is
+needed, state why in evidence; do not invent an upload or website requirement.
 
 ## Human-visible commands and collaboration status
 
