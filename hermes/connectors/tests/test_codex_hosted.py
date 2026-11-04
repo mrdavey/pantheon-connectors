@@ -44,6 +44,15 @@ class HostedCodexTests(unittest.TestCase):
             self.call('pantheon_site_status', {'connection': CONNECTION})
         self.assertEqual(self.server.children,{})
 
+    def test_legacy_owned_root_is_repaired_without_reauthorizing(self):
+        self.root.parent.mkdir(parents=True, exist_ok=True)
+        self.root.parent.chmod(0o755)
+        self.prepare_scope()
+        self.assertEqual(self.root.parent.stat().st_mode & 0o777, 0o700)
+        config = load_private(self.server.location(THREAD, CONNECTION))
+        self.assertIs(config['allow_runtime_turns'], False)
+        self.assertEqual(config['trial_expires_at'], 0)
+
     def test_startup_and_discovery_are_inert_and_prepare_stays_disabled(self):
         self.server.handle('initialize',{});self.server.handle('tools/list',{})
         self.assertFalse(self.root.exists())

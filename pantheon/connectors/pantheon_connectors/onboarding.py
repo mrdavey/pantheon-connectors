@@ -10,11 +10,12 @@ import os
 import pathlib
 import re
 import secrets
+import stat
 from contextlib import contextmanager
 from urllib.parse import parse_qs, urlsplit
 from . import PROTOCOL
 from .client import Client
-from .state import Journal, load_private, save_private
+from .state import Journal, load_private, save_private, mkdir_private_parents
 from .worker import Blocked, prompt
 
 VERSION = "0.2.0"
@@ -41,16 +42,27 @@ def invitation(link, trusted_origin):
     return fields["invite"][0]
 
 
-def private_directory(path):
+def private_directory(path, *, repair_owned=False):
     path = pathlib.Path(path).expanduser()
     if not path.is_absolute():
         raise Blocked("State directory must be absolute")
     for ancestor in (path, *path.parents):
         if ancestor.is_symlink():
             raise Blocked("State paths must not contain symlinks")
-    path.mkdir(mode=0o700, parents=True, exist_ok=True)
-    if path.stat().st_uid != os.getuid() or path.stat().st_mode & 0o077:
-        raise Blocked("State directory must be owner-only")
+    mkdir_private_parents(path)
+    fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        info = os.fstat(fd)
+        if info.st_uid != os.getuid() or not stat.S_ISDIR(info.st_mode):
+            raise Blocked("State directory must be owner-only")
+        if info.st_mode & 0o077:
+            # Migration only for an explicitly selected connector-owned root.
+            # Never adopt state writable by another user or follow a symlink.
+            if not repair_owned or info.st_mode & 0o022:
+                raise Blocked("State directory must be owner-only")
+            os.fchmod(fd, 0o700)
+    finally:
+        os.close(fd)
     return path
 
 

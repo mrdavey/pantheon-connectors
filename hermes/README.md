@@ -51,7 +51,7 @@ Track the latest published default branch without `--ref`, version or hash pins.
 Legacy pins need a one-time native tracking migration, preserving settings, user
 files and grants. Never force scanner acceptance or evade a native denial.
 The collaboration skill carries the complete runtime procedure and conditional
-fallback. Codex 0.9.8 / Hermes 0.5.14 are source candidates, not production pins.
+fallback. Codex 0.9.9 / Hermes 0.5.15 are source candidates, not production pins.
 
 ## Required native onboarding safeguards
 

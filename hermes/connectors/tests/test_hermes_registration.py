@@ -36,7 +36,12 @@ class RegistrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp, patch('pantheon_connectors.broker.package.metadata', return_value={'contract': 'pantheon.broker.v1'}), patch(
                 'pantheon_connectors.broker.adapter.ToolSnapshot.refresh', side_effect=RuntimeError('Plugin Doctor forbids network')) as refresh:
             ctx = Context()
-            plugin = self.load(ctx, Path(temp).resolve(), broker=True)
+            home = Path(temp).resolve()
+            # Reproduce an older setup writer's parents=True / umask=022 root.
+            (home / 'pantheon' / 'hosted').mkdir(parents=True, mode=0o700)
+            (home / 'pantheon').chmod(0o755)
+            plugin = self.load(ctx, home, broker=True)
+            self.assertEqual((home / 'pantheon').stat().st_mode & 0o777, 0o700)
             try:
                 refresh.assert_not_called()
                 self.assertIn('pantheon_connect', ctx.tools)

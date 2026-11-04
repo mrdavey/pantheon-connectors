@@ -13,9 +13,21 @@ class JournalBusy(RuntimeError):
     pass
 
 
+def mkdir_private_parents(path):
+    """Create each missing state ancestor privately, regardless of the umask.
+
+    pathlib's parents=True applies mode only to the leaf. Existing ancestors
+    retain their permissions; callers validate their own managed state boundary.
+    """
+    path = pathlib.Path(path)
+    if not path.exists():
+        mkdir_private_parents(path.parent)
+    path.mkdir(mode=0o700, exist_ok=True)
+
+
 def save_private(path, value):
     path = pathlib.Path(path)
-    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    mkdir_private_parents(path.parent)
     fd, temporary = tempfile.mkstemp(dir=path.parent)
     try:
         os.fchmod(fd, 0o600)
@@ -46,7 +58,7 @@ def load_private(path):
 class Journal:
     def __init__(self, path, binding):
         path = pathlib.Path(path)
-        path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+        mkdir_private_parents(path.parent)
         fd = os.open(path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
         os.close(fd)
         if path.stat().st_mode & 0o077 or path.stat().st_uid != os.getuid() or not path.is_file():

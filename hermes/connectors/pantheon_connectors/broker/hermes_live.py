@@ -42,7 +42,7 @@ def definitions(catalogue):
 class NativeBridge:
     def __init__(self, plugin, home):
         self.plugin = plugin
-        self.directory = private_directory(private_directory(Path(home) / 'pantheon') / 'bridges')
+        self.directory = private_directory(private_directory(Path(home) / 'pantheon', repair_owned=True) / 'bridges')
         self.identity = secrets.token_hex(16)
         self.secret = secrets.token_urlsafe(32)
         self.record = self.directory / (self.identity + '.json')
@@ -192,6 +192,15 @@ def serve(home, source, target):
                     result = {'tools': definitions(catalogue)}
                 elif method == 'tools/call':
                     args = params.get('arguments', {})
+                    if not isinstance(args, dict) or not args.get(PROOF):
+                        value = {'status': 'blocked', 'code': 'native_attestation_missing',
+                            'reason': 'Hermes did not attach native conversation proof to this tool call. Check the Pantheon native plugin loading error and supported plugin activation; repeated restarts do not repair state permissions.',
+                            'next_action': 'inspect_native_plugin_loading_error',
+                            'mutation_started': False}
+                        write({'jsonrpc': '2.0', 'id': item['id'], 'result': {
+                            'content': [{'type': 'text', 'text': json.dumps(value)}],
+                            'structuredContent': value, 'isError': True}})
+                        continue
                     identity = str(args.get(PROOF, '')).partition('.')[0]
                     value = request(home, identity, 'call', name=params.get('name'), args=args)
                     if params.get('name') == 'pantheon_doctor':

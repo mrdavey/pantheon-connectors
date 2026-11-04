@@ -97,10 +97,28 @@ class PortableLoadedVersion(unittest.TestCase):
         import io
         from pantheon_connectors.broker.hermes_live import serve
         from pantheon_connectors.version import HERMES_BROKER_VERSION
-        source = io.StringIO(json.dumps({'jsonrpc':'2.0','id':1,'method':'tools/call','params':{'name':'pantheon_doctor','arguments':{}}})+'\n')
+        source = io.StringIO(json.dumps({'jsonrpc':'2.0','id':1,'method':'tools/call','params':{'name':'pantheon_doctor','arguments':{PROOF:'a'*32+'.nonce'}}})+'\n')
         output = io.StringIO()
         with patch('pantheon_connectors.broker.hermes_live.request', return_value={'loaded_connector_version':'old-hook'}), patch('pantheon_connectors.broker.adapter.ToolSnapshot.watch'), patch('pantheon_connectors.broker.adapter.ToolSnapshot.close'):
             serve(Path('/unused-native-home'), source, output)
         result = json.loads(output.getvalue())['result']['structuredContent']
         self.assertEqual(result['loaded_connector_version'], 'old-hook')
         self.assertEqual(result['loaded_portable_version'], HERMES_BROKER_VERSION)
+
+
+class MissingNativeProof(unittest.TestCase):
+    def test_missing_proof_is_actionable_tool_result_not_transport_retry(self):
+        import io
+        from pantheon_connectors.broker.hermes_live import serve
+        source = io.StringIO(json.dumps({'jsonrpc': '2.0', 'id': 1,
+            'method': 'tools/call', 'params': {'name': 'pantheon_connect',
+            'arguments': {'link': 'PRIVATE_CANARY'}}})+'\n')
+        output = io.StringIO()
+        with patch('pantheon_connectors.broker.hermes_live.request') as call, patch('pantheon_connectors.broker.adapter.ToolSnapshot.watch'), patch('pantheon_connectors.broker.adapter.ToolSnapshot.close'):
+            serve(Path('/unused'), source, output)
+        result = json.loads(output.getvalue())['result']
+        self.assertTrue(result['isError'])
+        self.assertEqual(result['structuredContent']['code'], 'native_attestation_missing')
+        self.assertFalse(result['structuredContent']['mutation_started'])
+        self.assertNotIn('PRIVATE_CANARY', output.getvalue())
+        call.assert_not_called()

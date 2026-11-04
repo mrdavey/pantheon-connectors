@@ -194,7 +194,7 @@ class Policy:
         if expires_at is not None:
             validate_deadline(expires_at)
             selected['expires_at'] = min(selected['expires_at'] or expires_at, expires_at)
-        private_directory(self.path.parent)
+        private_directory(self.path.parent, repair_owned=True)
         with private_lock(self.path.with_suffix('.lock')):
             if not change and self.active(self.read(), thread):
                 return self.status(thread)

@@ -137,7 +137,7 @@ class HostedServer:
             if name == 'pantheon_connect':
                 (codex_setup_policy.validate_connect if self.setup_enabled else connect.validate)(args)
                 for directory in [self.root.parent, self.root, path.parent.parent, path.parent]:
-                    private_directory(directory.absolute())
+                    private_directory(directory.absolute(), repair_owned=directory == self.root.parent)
                 def inspect():
                     if not path.exists() and not path.is_symlink():
                         return {}
@@ -185,7 +185,7 @@ class HostedServer:
                         or ('inspect_default_daemon' in args and type(args['inspect_default_daemon']) is not bool)):
                     raise Blocked('Deliberate origin selection and an optional boolean inspection consent are required')
                 # Create ancestors privately too, never inherit a permissive default mkdir.
-                for directory in [self.root.parent,self.root,self.root/hashlib.sha256(thread.encode()).hexdigest(),path.parent]: private_directory(directory.absolute())
+                for directory in [self.root.parent,self.root,self.root/hashlib.sha256(thread.encode()).hexdigest(),path.parent]: private_directory(directory.absolute(), repair_owned=directory == self.root.parent)
                 audit=Audit(path,plugin_version=metadata['package_version'])
                 with audit.operation(name,thread=thread,connection=connection):
                     from . import hosted_v3

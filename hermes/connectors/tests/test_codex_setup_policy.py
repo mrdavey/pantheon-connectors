@@ -40,6 +40,12 @@ class SetupPolicyTests(unittest.TestCase):
         save_private(path, config)
         return path, config
 
+    def test_legacy_setup_root_repairs_permissions_before_native_review_save(self):
+        self.policy.path.parent.mkdir(mode=0o755)
+        self.policy.path.parent.chmod(0o755)
+        self.review()
+        self.assertEqual(self.policy.path.parent.stat().st_mode & 0o777, 0o700)
+
     def test_server_command_contract_remains_usable_by_qualified_092_package(self):
         # Captured from qualified main cb397dc; updating a command enum would
         # block ALL old preapproved command calls, including ordinary ready.
