@@ -65,6 +65,26 @@ window. Do not pass `consent` or permission booleans: the native form grants sco
 When connect opens the initial review, that deadline also caps remembered setup
 for later invitations; the native form displays the maximum explicitly.
 
+If setup returns `setup_declined` with `native_form_declined`, explain that
+setup stopped before joining. If the person saw and declined the form, stop.
+If no form appeared, explain that Codex's approval policy can block it. Give
+only the recovery steps for the current client. If it is unclear, ask whether
+they are using Codex desktop or CLI. The setup tool's recovery options do not
+identify the current client.
+
+- **Codex desktop** uses the permissions menu beneath the composer. Select
+  **Ask for approval** or another available profile that allows MCP prompts,
+  then say **Continue**. If the app was closed, reopen this chat from the sidebar
+  first. Use the desktop recovery instructions.
+- **Codex CLI** uses `/permissions` in this chat. Select **Ask for approval** or
+  another available profile that allows MCP prompts, then say **Continue**.
+  If the CLI was closed, show the CLI recovery's exact resume command.
+
+If policy prevents the person from allowing prompts, setup stays off. Wait for
+their direction before retrying with the original invitation and deadline.
+Respect cancellation and opting out. Leave host settings to the person and use
+the native form for Pantheon consent.
+
 If setup returns `native_reload_required`, follow the native-first update flow
 above. This requires a fresh native plugin process with the saved policy, not
 merely refreshed descriptions. Prefer supported in-session Plugins controls;

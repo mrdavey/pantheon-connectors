@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import threading
 import time
+from uuid import UUID
 from .codex_audit import Audit
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
@@ -331,9 +332,36 @@ class HostedServer:
             prepare(path, TRUSTED_ORIGIN, 'default', delivery=delivery,
                     native_thread=thread, inspect_default_daemon=delivery == DEFAULT_DAEMON)
             return load_private(path)
+        choose_host = (descriptor() or {}).get('delivery') == NATIVE_SETUP
         result = self.setup_policy.review(thread, self.elicit, inspect, change=change, expires_at=expires_at,
-                                         choose_host=(descriptor() or {}).get('delivery') == NATIVE_SETUP)
-        return {**result, **self.setup_status(thread)} if result['status'] == 'setup_active' else result
+                                         choose_host=choose_host)
+        if result['status'] == 'setup_active':
+            return {**result, **self.setup_status(thread)}
+        if result.get('reason') != 'native_form_declined':
+            return result
+
+        # Codex uses the same MCP action for a user decline and a policy
+        # rejection before rendering. The response does not identify which.
+        recovery = {
+            'cli': {
+                'instruction': 'In the same Codex CLI chat, open /permissions and select Ask for approval '
+                               '(or another profile that allows MCP prompts), if available. Then say Continue. '
+                               'If you closed the CLI, run the resume command in the same directory and Codex '
+                               'profile, then open /permissions.',
+                'resume_command': f'codex resume {UUID(thread)}',
+            },
+        }
+        if choose_host:
+            recovery['desktop'] = {
+                'instruction': 'In the same Codex desktop chat, open the permissions menu beneath the composer. '
+                               'Select Ask for approval (or another profile that allows MCP prompts), if available, '
+                               'then say Continue. If you closed the app, reopen this chat from the sidebar first.',
+            }
+        return {**result,
+                'notice': 'Pantheon setup stopped before joining. If you declined the form, setup stays off. '
+                          'If no form appeared, Codex may have blocked it. An approval policy of Never '
+                          'automatically declines MCP setup forms. Approve Pantheon in the native form to proceed.',
+                'recovery': recovery}
 
     def setup_status(self, thread):
         status = self.setup_policy.status(thread)
@@ -344,7 +372,7 @@ class HostedServer:
         if status['status'] == 'setup_active' and self.setup_policy.read()['id'] != self.loaded_setup_id:
             fallback = ('Restart the Codex desktop app normally, reopen this same chat, then Continue.'
                         if status['delivery'] == GUI_QUEUE else
-                        'End this turn, /quit, wait for this CLI to exit, then codex resume with this conversation\'s trusted native ID, then Continue.')
+                        f'Enter /quit, wait for Codex to exit, run codex resume {UUID(thread)}, then say Continue.')
             return {**status, 'status': 'native_reload_required', 'membership_started': False,
                     'next_action': 'try_native_reload_same_conversation',
                     'reload_requirement': 'fresh_native_plugin_process',

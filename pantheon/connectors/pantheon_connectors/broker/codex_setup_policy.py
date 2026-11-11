@@ -193,10 +193,20 @@ class Policy:
                 del form['properties'][field]
             defaults[capability] = folder
         message += ' File handoff folder: ' + defaults['transfers'] + '. Website folder: ' + defaults['sites'] + '.'
-        selected = choices(elicit(message, form), time.time(), form,
-                           defaults=defaults, creatable=managed.values())
+        response = elicit(message, form)
+        selected = choices(response, time.time(), form, defaults=defaults, creatable=managed.values())
         if selected is None:
-            return {'status': 'setup_declined', 'runtime_started': False}
+            action = response.get('action') if isinstance(response, dict) else None
+            if action == 'decline':
+                reason = 'native_form_declined'
+            elif action == 'cancel':
+                reason = 'native_form_cancelled'
+            elif action == 'accept':
+                reason = 'collaboration_disabled'
+            else:
+                reason = 'native_form_unanswered'
+            return {'status': 'setup_declined', 'reason': reason,
+                    'runtime_started': False, 'membership_started': False}
         if expires_at is not None:
             validate_deadline(expires_at)
             selected['expires_at'] = min(selected['expires_at'] or expires_at, expires_at)
