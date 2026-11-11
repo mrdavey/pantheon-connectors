@@ -344,23 +344,25 @@ class HostedServer:
         # rejection before rendering. The response does not identify which.
         recovery = {
             'cli': {
-                'instruction': 'In the same Codex CLI chat, open /permissions and select Ask for approval '
-                               '(or another profile that allows MCP prompts), if available. Then say Continue. '
+                'instruction': 'In the same Codex CLI chat, open `/permissions` and select **Ask for approval** '
+                               '(or another profile that allows MCP prompts), if available. Then say **Continue**. '
                                'If you closed the CLI, run the resume command in the same directory and Codex '
-                               'profile, then open /permissions.',
+                               'profile, then open `/permissions`.',
                 'resume_command': f'codex resume {UUID(thread)}',
             },
         }
         if choose_host:
             recovery['desktop'] = {
                 'instruction': 'In the same Codex desktop chat, open the permissions menu beneath the composer. '
-                               'Select Ask for approval (or another profile that allows MCP prompts), if available, '
-                               'then say Continue. If you closed the app, reopen this chat from the sidebar first.',
+                               'Select **Ask for approval** (or another profile that allows MCP prompts), if available, '
+                               'then say **Continue**. If you closed the app, reopen this chat from the sidebar first.',
             }
         return {**result,
-                'notice': 'Pantheon setup stopped before joining. If you declined the form, setup stays off. '
-                          'If no form appeared, Codex may have blocked it. An approval policy of Never '
-                          'automatically declines MCP setup forms. Approve Pantheon in the native form to proceed.',
+                'notice': 'Pantheon setup stopped before joining. If you declined the form, setup stays off.\n\n'
+                          'If no form appeared, Codex automatically declines MCP setup forms in **Full Access** '
+                          '(the **Never** approval policy). This is a Codex limitation. Select **Ask for approval** '
+                          'in this chat’s permissions menu, then say **Continue**. Approve setup when Codex opens '
+                          'the form.',
                 'recovery': recovery}
 
     def setup_status(self, thread):

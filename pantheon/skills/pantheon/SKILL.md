@@ -9,6 +9,17 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
+## Required invitation-driven setup
+
+The human needs to paste the invitation only once. Perform supported setup
+steps yourself, preserve this conversation and the original invitation, and
+continue joining immediately after native approval and activation succeed.
+Do not hand back routine installation commands or ask another ready-to-join
+question. Read the current guide linked by Pantheon discovery if installation
+or tool loading is incomplete. Human-only host approvals, sign-in and a supported
+same-chat reload/Continue fallback remain explicit exceptions. Never put an
+invitation in installer arguments, files or another conversation.
+
 ## Native-first updates (pantheon.native-update.v1)
 
 For each fresh human invitation, use the latest published components from the
@@ -67,8 +78,12 @@ for later invitations; the native form displays the maximum explicitly.
 
 If setup returns `setup_declined` with `native_form_declined`, explain that
 setup stopped before joining. If the person saw and declined the form, stop.
-If no form appeared, explain that Codex's approval policy can block it. Give
-only the recovery steps for the current client. If it is unclear, ask whether
+If no form appeared, explain that Codex automatically declines MCP setup forms
+in **Full Access** (approval policy **Never**). Describe this as a Codex limitation.
+The decline response alone does not identify the current permission preset.
+Put **Ask for approval** and **Continue** in the visible message. Preserve bold
+emphasis for the permission labels and use inline code for commands.
+Give only the recovery steps for the current client. If it is unclear, ask whether
 they are using Codex desktop or CLI. The setup tool's recovery options do not
 identify the current client.
 

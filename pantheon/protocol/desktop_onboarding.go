@@ -12,3 +12,8 @@ var HostedOnboardingV3Desktop []byte
 //
 //go:embed hosted-onboarding-v3-native-refresh.md
 var HostedOnboardingV3NativeRefresh []byte
+
+// Invitation-driven setup belongs to 0.9.12+; earlier published bytes stay intact.
+//
+//go:embed hosted-onboarding-v3-invite-setup.md
+var HostedOnboardingV3InviteSetup []byte

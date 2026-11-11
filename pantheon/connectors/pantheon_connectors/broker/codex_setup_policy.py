@@ -50,11 +50,11 @@ FORM = {'type': 'object', 'properties': {
         'enum': ['0', '15', '30', '45', '60'],
         'enumNames': ['Until each chat ends', '15 minutes', '30 minutes', '45 minutes', '60 minutes'], 'default': '0',
         'description': 'A nonzero limit is one fixed window starting now, including any later invitation; retries never extend it.'},
-    'transfers': {'type': 'boolean', 'title': 'File handoff', 'default': True,
-        'description': 'Send to a single chat member and use the dedicated file handoff folder; existing size and expiry limits apply.'},
+    'transfers': {'type': 'boolean', 'title': 'File handoff (optional)', 'default': True,
+        'description': 'Your agent can send a draft or test output to one collaborator for review, or receive a file it needs to continue the work. Files use the dedicated handoff folder and have size and expiry limits.'},
     'transfer_folder': {'type': 'string', 'title': 'File handoff folder (absolute path)', 'default': ''},
-    'sites': {'type': 'boolean', 'title': 'Website publishing', 'default': True,
-        'description': 'Publish authorized static files from the dedicated sites folder using separately granted chat website authority. Published sites may remain online after chat closure.'},
+    'sites': {'type': 'boolean', 'title': 'Public website publishing (optional)', 'default': True,
+        'description': 'Your agent can publish a demo or report as a public website so people can open the result in a browser. Publishing uses static files from the dedicated sites folder and requires separate permission in the chat. Sites may stay online after the chat ends.'},
     'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
 }, 'required': ['collaboration', 'minutes', 'transfers', 'sites']}
 MESSAGE = ('We\'ll collect Pantheon permissions now so your agent can collaborate without stopping for routine approvals. '
@@ -62,7 +62,9 @@ MESSAGE = ('We\'ll collect Pantheon permissions now so your agent can collaborat
            'Allow Pantheon to join chats from invitations you give Codex, receive replies and collaborate using each conversation\'s existing provider/account at its normal cost. '
            'This includes the broader local Codex daemon API; Pantheon restricts use to invited conversations. Each chat stops on closure, withdrawal or expiry, with at most three active connections. '
            'Remembered choices never share membership or renew old grants. Some providers do not expose exact account identity. '
-           'New setups default to file handoff and public static publishing in dedicated folders. Accepting setup allows their routine tools; each action still needs task and chat authority. Change setup to customize folders or turn features off. Existing native denials and unrelated shell/file controls remain. Revoke anytime with pantheon_setup.')
+           'File handoff and public website publishing are optional and start selected in a new setup. Clear either option to collaborate without it. '
+           'For options you allow, your agent decides whether using them would help with the task, within the permissions granted in that chat. '
+           'Change setup to customize folders or turn features off. Existing native denials and unrelated shell/file controls remain. Revoke anytime with pantheon_setup.')
 
 # Only a package that explicitly supports both transports offers this choice.
 # Existing daemon-only preferences keep their original semantics on upgrade.
