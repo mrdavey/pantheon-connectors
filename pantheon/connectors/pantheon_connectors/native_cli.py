@@ -87,7 +87,7 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         return True
     binding = binding_for(config, native_thread)
     from .broker.codex_setup_policy import require_tool
-    require_tool(config, name, args)
+    file_boundary = require_tool(config, name, args)
     if name in ('pantheon_begin_wake', 'pantheon_finish_wake') and binding['surface'] == 'app-server-tool-output':
         from .codex_output import OutputNotices
         if not isinstance(args, dict) or set(args) != {'connection', 'wake_id'} or any(type(v) is not str for v in args.values()):
@@ -173,7 +173,12 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         value = Notices(config).withdraw(args['connection'], lambda: dispatch(service, name, args, binding, check, doctor))
         value['wake_cleanup']['private_runtime_disabled'] = fenced
         return value
-    value = dispatch(service, name, args, binding, check, doctor)
+    try:
+        value = dispatch(service, name, args, binding, check, doctor, file_boundary=file_boundary)
+    except OSError:
+        if file_boundary is None:
+            raise
+        raise Blocked('Cannot safely access the chosen local path. Check the selected folder in native setup.') from None
     if name == "pantheon_join" and value.get("connection"):
         value["receiver_binding_file"] = str(pathlib.Path(config["state_dir"]) / (value["connection"] + ".json"))
         if selected(config) in (DEFAULT_DAEMON, GUI_QUEUE):

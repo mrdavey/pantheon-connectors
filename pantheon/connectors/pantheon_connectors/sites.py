@@ -13,6 +13,7 @@ import stat
 from datetime import datetime, timezone
 
 from .client import APIError
+from .file_security import read_regular
 from .state import save_private, load_private
 from .worker import Blocked
 
@@ -37,58 +38,43 @@ TOOLS = [
 ]
 
 
-def bundle(directory):
-    root = Path(directory)
-    if not root.is_absolute() or '..' in root.parts:
-        raise Blocked('Website output must be an absolute directory without symlinks')
-    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
-    fd = os.open('/', flags)
+def bundle(directory, *, boundary):
+    parts = boundary.target(directory, directory=True)
     files, manifest, seen = [], [], set()
     total = 0
 
-    def walk(folder, prefix=''):
+    def walk(folder, path, prefix=''):
         nonlocal total
-        for name in sorted(os.listdir(folder)):
+        for name in sorted(os.listdir(folder.fd)):
             relative = prefix + name
             if (len(relative) > 200 or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_./-]*', relative)
                     or name.startswith(('.', '_')) or name.lower() in FORBIDDEN):
                 raise Blocked('Website contains a forbidden path or provider configuration')
-            info = os.stat(name, dir_fd=folder, follow_symlinks=False)
+            child_path = (*path, name)
+            boundary.check_names(child_path)
+            info = folder.stat(name)
             if stat.S_ISDIR(info.st_mode):
-                child = os.open(name, flags, dir_fd=folder)
-                try:
-                    walk(child, relative + '/')
-                finally:
-                    os.close(child)
+                with folder.child(name, expected=info) as child:
+                    walk(child, child_path, relative + '/')
                 continue
-            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
-                raise Blocked('Website files must be regular files without links')
             if Path(name).suffix.lower() not in EXTENSIONS or relative.lower() in seen:
                 raise Blocked('Unsupported or duplicate website file')
-            child = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=folder)
-            with os.fdopen(child, 'rb') as source:
-                actual = os.fstat(source.fileno())
-                if not stat.S_ISREG(actual.st_mode) or actual.st_nlink != 1:
-                    raise Blocked('Website file changed during packaging')
-                data = source.read(MAX_FILE + 1)
+            data = read_regular(folder, name, MAX_FILE)
             total += len(data)
-            if len(data) > MAX_FILE or total > MAX_TOTAL or len(files) >= 500:
+            if total > MAX_TOTAL or len(files) >= 500:
                 raise Blocked('Website exceeds the 500-file, 5 MiB/file or 20 MiB total limit')
             if SECRET.search(data):
                 raise Blocked('Website contains a possible secret; remove it before uploading')
             seen.add(relative.lower())
             files.append({'path': relative, 'data': base64.b64encode(data).decode('ascii')})
             manifest.append([relative, hashlib.sha256(data).hexdigest()])
+        folder.verify()
+
     try:
-        for component in root.parts[1:]:
-            child = os.open(component, flags, dir_fd=fd)
-            os.close(fd)
-            fd = child
-        walk(fd)
+        with boundary.directory(parts) as folder:
+            walk(folder, parts)
     except OSError:
         raise Blocked('Cannot safely read the selected website directory') from None
-    finally:
-        os.close(fd)
     if not any(f['path'] == 'index.html' and f['data'] for f in files):
         raise Blocked('Website requires a nonempty index.html')
     manifest.sort()
@@ -96,7 +82,9 @@ def bundle(directory):
     return files, digest
 
 
-def execute(service, name, args, binding):
+def execute(service, name, args, binding, *, boundary=None):
+    if name == 'pantheon_site_deploy' and boundary is None:
+        raise Blocked('Local file operations require a folder approved in native Pantheon setup')
     state, _, client = service.member(args['connection'], binding)
     manifest = client.request('/v1/manifest')
     if (manifest.get('website_publishing', {}).get('available') is not True
@@ -117,7 +105,7 @@ def execute(service, name, args, binding):
         unexpired = False
     if grant.get('enabled') is not True or not unexpired:
         raise Blocked('Website updates are disabled or this chat’s publishing window has ended')
-    files, digest = bundle(args['directory'])
+    files, digest = bundle(args['directory'], boundary=boundary)
     service.require_allowance()
     # Private journal contains metadata only. Credentials and bundle bytes are
     # never copied to this receipt or native diagnostic logs.

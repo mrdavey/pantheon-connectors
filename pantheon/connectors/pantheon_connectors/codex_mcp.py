@@ -33,8 +33,9 @@ WAKE_TOOLS = [dict(name=name, description='Use only connection/wake_id from the 
 
 
 class Server:
-    def __init__(self, setup_file):
+    def __init__(self, setup_file, *, loaded_setup_id=None):
         self.setup_file = setup_file
+        self.loaded_setup_id = loaded_setup_id
         self.workers = {}
         self.status = {}
         self.lock = threading.Lock()
@@ -135,6 +136,11 @@ class Server:
             if mode not in (DEFAULT_DAEMON, GUI_QUEUE) or (mode == GUI_QUEUE and config.get('hosted_consent') is not True):
                 raise Blocked('Plugin refuses another delivery mode')
             binding_for(config, thread)
+            from .broker.codex_setup_policy import FILE_CAPABILITIES
+            if name in FILE_CAPABILITIES and 'codex_setup_policy' in config:
+                ref = config['codex_setup_policy']
+                if not isinstance(ref, dict) or ref.get('id') != self.loaded_setup_id:
+                    raise Blocked('Reload Pantheon normally in this same Codex conversation to use the current native setup')
             value = execute(config, name, args, native_thread=thread, setup_file=self.setup_file)
             if name == 'pantheon_join' and value.get('connection'):
                 self.start(value['connection'])

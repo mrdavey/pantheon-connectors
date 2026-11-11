@@ -95,3 +95,6 @@ paths or separately enable each feature. The initial form omits folder inputs;
 `pantheon_setup(action:"change")` offers customization and opt-out. Preserve saved
 choices and narrower trial limits. Defaults never authorize an actual upload,
 publication or file execution outside the human’s task and chat grants.
+Choose folders for shareable files. Credential paths and host profile data are
+blocked, with access to the selected dedicated Pantheon folders. Use regular files
+without symlinks or hardlinks.

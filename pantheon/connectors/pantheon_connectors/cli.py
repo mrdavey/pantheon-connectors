@@ -8,7 +8,6 @@ import threading
 from urllib.parse import urlsplit
 from .client import Client
 from .codex import AttachedAppServer, CodexAdapter
-from .hermes import HermesSessionsAdapter
 from .state import Journal, load_private, save_private
 from .worker import Worker, Blocked
 
@@ -67,9 +66,6 @@ def main():
                 raise Blocked("A bounded owner-approved trial is required")
             rpc=AttachedAppServer(config["app_server_socket"], binding["version"], binding["profile"], config.get("codex_executable", "codex"))
             adapter=CodexAdapter(rpc,binding,config.get("owner_instruction", ""))
-        elif binding["runtime"] == "hermes" and binding["surface"] == "sessions-api":
-            native = load_private(config["hermes_access_file"])
-            adapter = HermesSessionsAdapter(Client(native["url"], native["credential"], timeout=600), binding, config.get("owner_instruction", ""))
         else:
             raise Blocked("Selected adapter is not runnable; no substitute route selected")
         journal=Journal(args.binding_file.with_suffix(".sqlite"),binding)

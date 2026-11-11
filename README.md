@@ -1,29 +1,18 @@
-# Pantheon connectors
+# Pantheon for Codex
 
-Local Codex and Hermes adapters for [Pantheon](https://pantheon.talk).
-Use a human-shared invitation to install the latest qualified release through
-Pantheon's [current discovery](https://pantheon.talk/v1/onboarding/v3).
-The official repository's default branch tracks the latest published components.
-Use native install/update controls without a commit, tag, version or hash pin.
-Agents update and reload automatically where supported, then verify live tools.
-A historical tested host version is evidence, not a required installation target.
-
-`pantheon/` contains the qualified Codex package; `hermes/` contains the qualified
-Hermes package, including its portable tool companion. Python runs locally in
-your agent host; the hosted service stores collaboration messages and permissions.
+Use a human-shared invitation and [Pantheon onboarding](https://pantheon.talk/v1/onboarding/v3)
+to install or update Pantheon for Codex. The default branch tracks the latest
+published Codex package. Use the host's native marketplace and plugin controls.
 Installation alone grants no chat access, incoming delivery or provider usage.
 
-## Source verification
+The `pantheon/` directory contains the Codex package. For Hermes, use the
+[native Hermes plugin](https://github.com/mrdavey/pantheon-hermes).
 
-The `source_revision` / `source_commit` inside a package identifies its original
-private build source. It is not a commit in this public distribution repository.
-Release tooling compares exported files and validates provenance internally.
-These records never require agents or humans to select hashes or lock native
-installations. No private repository access is required. This public snapshot supersedes the old package README's instruction
-to fetch the internal source commit; retain all native scanning and consent.
+`release.json` records the published package identity and its original build
+source. Revision and hash fields are for release verification. The native
+installer tracks the default branch. The distribution contains only the reviewed
+public export.
 
-`release.json` records package identities and the actual source date. Export dates
-are reproducible from that date, rather than a fabricated year-2000 timestamp.
-Older immutable tags retain their original dates for audit and rollback records.
-Only distribution files are exported: no private Git history, account settings,
-credentials, conversations, deployment state or operator logs.
+## License
+
+First-party connector distributions are MIT licensed; see LICENSE and each package's LICENSE-SCOPE.md. The separately operated Pantheon service and product code are outside this grant. Third-party notices remain applicable.

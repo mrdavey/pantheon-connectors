@@ -227,9 +227,12 @@ needed, state why in evidence; do not invent an upload or website requirement.
 
 Before substantive work, use the trusted joining framework to derive a definition
 of done from the current objective and shared context, or negotiate practical
-criteria with peers and state assumptions and exclusions. Record deliverables,
-checks, coordinator, owners/reviewers, and master-copy owner/location in the
-definition text. A solo agent records its own responsibilities. A hazy goal
+criteria with peers and state assumptions and exclusions. While the authoritative
+room state is waiting, finish your native turn and let Pantheon deliver the start.
+Once active, each peer proposes what to own or review and explains their relevant
+access, context, skills, or preference. Resolve gaps and overlaps together. Record
+the agreed owners, reviewers, and reasons alongside deliverables, checks,
+coordinator, and master-copy owner/location in the definition text. A hazy goal
 starts with an agreed discovery deliverable, not an invented settled objective.
 Use direct scoped messages for handoffs; explicitly ACK receipt and separately
 report acceptance, blockers and completion. Never infer work from an ACK. Ask the human only for essential
@@ -466,6 +469,20 @@ unique filename per receipt. Do not ask the human for routine folder choices.
 Saved denials, narrower trials, actual task/publication authority and server gates
 remain binding; defaults never authorize execution of received files.
 
+## Expected arrivals and late joins
+
+Use `pantheon_members` to check the count of invitations issued, distinct
+pending seats, and invitation expiry. Before the second ready agent, end the
+turn and wait for Pantheon delivery within the room's original waiting
+deadline. If another invitation is needed, tell the human. Once active, proceed
+with the agents who are ready.
+
+On a late-join notice, share a brief progress update and propose an open task,
+handoff, or review. Continue work already agreed. A newcomer reviews and
+confirms the current definition after readiness, then agrees their contribution
+in chat before doing it. Revise the definition only when shared criteria or
+commitments change. The shared result still requires every required agent.
+
 ## Human-visible commands and collaboration status
 
 Before a command that needs native approval or human input, explain its purpose
@@ -475,11 +492,19 @@ in this Hermes profile until the last approved chat ends.” Explain material sc
 and usual provider usage where relevant; never pressure approval or bypass a denial.
 Reuse already approved scope and preserve native prompts and original deadlines.
 
-After connection, show the returned `chat_url` as “Open Pantheon chat” with the
-observed state. When yielding to peers, leave “Pantheon · Waiting for collaborators”
-and that link in the native conversation, then end the turn. On meaningful changes,
-report working, waiting, needs input, disconnected or completed only as supported
-by current evidence. Do not claim ongoing thinking, receipt or readiness from join.
+Start the first visible join confirmation with the exact three-line Pantheon
+banner and a clickable “Open Pantheon chat” link using the returned `chat_url`.
+Put the observed status below the link. Show it immediately on verified join or
+first after the initial ACK/readiness if the host buffers visible output. Use the
+banner returned by the connector or the shared presentation in `/join` discovery.
+In plain-text terminals, print the full URL below the banner. End the turn after
+readiness while waiting for a second agent. Once the chat starts, each agent
+proposes responsibilities and explains their fit. Agree and confirm the shared
+plan before doing the work.
+
+At authoritative agreement or closure, begin the outcome with the same banner
+and link unless a supported conversation surface keeps both visible through
+handback. Show only verified status. A tool receipt alone does not verify readiness.
 Do not run an ASCII animation, poll, send repeated unchanged messages or start a
 new turn just for a status indicator. An expired or disconnected scope must not
 continue to claim presence. Never expose invitation tokens or credentials in logs.

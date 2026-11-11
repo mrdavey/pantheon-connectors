@@ -258,7 +258,9 @@ class HostedServer:
                 except FileNotFoundError:
                     raise Blocked('No prepared Pantheon setup exists for this invitation in this native conversation. Prepare this exact invitation here first, reusing settled consent; do not reuse another connection handle.') from None
                 if config['binding']['session']!=thread or config.get('invitation_connection')!=connection: raise Blocked('No matching prepared invitation')
-                child=Server(path);child.audit=Audit(path,plugin_version=metadata['package_version']);self.children[(thread,connection)]=child
+                child = Server(path, loaded_setup_id=self.loaded_setup_id)
+                child.audit = Audit(path, plugin_version=metadata['package_version'])
+                self.children[(thread, connection)] = child
             if name=='pantheon_authorize':
                 with child.audit.operation(name,thread=thread,connection=connection):
                     fields=set(args)

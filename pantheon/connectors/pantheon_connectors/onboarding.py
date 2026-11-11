@@ -23,6 +23,18 @@ VERSION = "0.2.0"
 HERMES_COMMIT = "e06df9c2eae6901f4c88f464e0ae6e753c0428b8"
 
 
+def chat_presentation(service_origin, chat_id, *, terminal=False):
+    if not isinstance(chat_id, str) or not re.fullmatch(r"[a-f0-9]{32}", chat_id):
+        return {}
+    path = pathlib.Path(__file__).resolve().parents[2] / "protocol" / "native-chat-presentation.json"
+    contract = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        "chat_url": service_origin + "/app?chat=" + chat_id,
+        "banner": contract["banner"],
+        "progress_guidance": contract["completion_instruction" if terminal else "instruction"],
+    }
+
+
 def origin(value):
     parsed = urlsplit(value)
     if parsed.path not in ("", "/") or parsed.username or parsed.password or parsed.query or parsed.fragment:
@@ -177,10 +189,11 @@ class Onboarding:
             view = client.request('/v1/chat')
             chat = view.get('chat', {})
             chat_id = chat.get('id', '')
-            if isinstance(chat_id, str) and re.fullmatch(r'[a-f0-9]{32}', chat_id):
-                progress = {'chat_url': self.url + '/app?chat=' + chat_id,
-                            'collaboration_status': 'connected' if chat.get('state') in ('waiting', 'active') else 'ended',
-                            'progress_guidance': 'Show the human this chat link and the observed connection state. Before yielding to peers, say “Pantheon · Waiting for collaborators” with the link, then end the native turn. Update only on meaningful state changes; never poll or animate text to keep a turn alive. Connected does not prove delivery or completion.'}
+            chat_state = chat.get('state')
+            if chat_state in ('waiting', 'active', 'closed'):
+                progress = chat_presentation(self.url, chat_id, terminal=chat_state == 'closed')
+                if progress:
+                    progress['collaboration_status'] = 'ended' if chat_state == 'closed' else 'connected'
         return {**progress, "connection": identity, "status": "joined_awaiting_real_agent_probe",
                 "next": "Call pantheon_receive, explicitly ACK the IDs, then ready with the exact probe text. No harness ACK is automatic."}
 
@@ -235,7 +248,7 @@ class Onboarding:
                     journal.complete_notice(notice)
                     return {"messages": [], "status": "stale_notice_noop",
                             "notice": "No input remains for this notice. Do not reply or start another wait."}
-                output = []
+                output, presentation = [], {}
                 for envelope in pending[:20]:
                     self.require_allowance()
                     if envelope["protocol"] != PROTOCOL or envelope["binding"] != binding:
@@ -273,13 +286,15 @@ class Onboarding:
                                    before_send=lambda _: self.require_allowance())
                     journal.put(identity, "received", reported=True)
                     output.append(rendered)
+                    if binding["runtime"] == "codex" and message.get("kind") == "terminal":
+                        presentation = chat_presentation(self.url, current.get("chat"), terminal=True)
                 if notice is not None:
                     # Retain the exact token until its deliveries are ACKed. The
                     # native result can be lost even after this method succeeds.
                     notice['fetched'] = True
                     journal.control("hermes-notice", json.dumps(notice))
                 self.require_allowance()
-                return {"messages": output, "has_more": len(pending) > 20,
+                return {**presentation, "messages": output, "has_more": len(pending) > 20,
                         "notice": "Only explicit pantheon_ack marks these IDs consumed. ACK this batch, then receive again with the same notice_token when has_more is true."}
         finally:
             journal.db.close()
@@ -330,7 +345,7 @@ def validate_arguments(name, args):
             raise Blocked("Message IDs must be strings")
 
 
-def dispatch(service, name, args, binding, preflight, doctor):
+def dispatch(service, name, args, binding, preflight, doctor, *, file_boundary=None):
     if name not in {tool['name'] for tool in TOOLS}:
         from .broker.client import BrokerClient
         if not isinstance(args, dict) or not isinstance(args.get('connection'), str):
@@ -343,12 +358,12 @@ def dispatch(service, name, args, binding, preflight, doctor):
     validate_arguments(name, args)
     if name in ('pantheon_site_deploy', 'pantheon_site_status'):
         from .sites import execute
-        return execute(service, name, args, binding)
+        return execute(service, name, args, binding, boundary=file_boundary)
 
     from . import transfers
     if name in transfers.NAMES:
         preflight(binding)
-        return transfers.execute(service, name, args, binding)
+        return transfers.execute(service, name, args, binding, boundary=file_boundary)
     if name == "pantheon_doctor":
         return doctor()
     if name == "pantheon_preview":

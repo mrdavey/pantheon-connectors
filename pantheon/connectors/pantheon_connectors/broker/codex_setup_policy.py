@@ -8,6 +8,7 @@ import copy
 import os
 from pathlib import Path
 import secrets
+import stat
 import tempfile
 import time
 
@@ -15,10 +16,15 @@ from ..onboarding import private_directory, private_lock
 from ..state import load_private, save_private
 from ..worker import Blocked
 from ..feature_defaults import folders as default_folders
+from ..file_security import FileBoundary, absolute_parts
 from . import codex_trust
 from ..codex_delivery import DEFAULT_DAEMON, GUI_QUEUE
 
 CONTRACT = 'pantheon.codex-setup.v1'
+FILE_CAPABILITIES = {
+    'pantheon_transfer_send': 'transfers', 'pantheon_transfer_fetch': 'transfers',
+    'pantheon_transfer_ack': 'transfers', 'pantheon_site_deploy': 'sites',
+}
 TOOL = {'name': 'pantheon_setup', 'description':
     'Review Pantheon setup once using the native human form. Reuse active setup for deliberate human invitations; status is read-only, revoke stops derived runtime grants. Model arguments never approve permissions.',
     'inputSchema': {'type': 'object', 'properties': {'action': {'type': 'string',
@@ -125,12 +131,12 @@ def choices(response, now, form=FORM, *, defaults=None, creatable=()):
             folder = (defaults or {}).get(capability)
         if not isinstance(folder, str) or not folder or not Path(folder).is_absolute():
             raise Blocked('Selected file capabilities require an existing absolute folder; no permissions were saved')
-        path = Path(folder)
+        path = Path('/', *absolute_parts(folder))
         if (any(p.is_symlink() for p in (path, *path.parents))
                 or (not path.is_dir() and folder not in creatable)
-                or (path.exists() and not path.is_dir()) or path.resolve() == Path('/')):
+                or (path.exists() and not path.is_dir())):
             raise Blocked('Select a specific existing folder without symlinks; no permissions were saved')
-        result['folders'][capability] = str(path.resolve())
+        result['folders'][capability] = str(path)
     return result
 
 
@@ -194,6 +200,8 @@ class Policy:
         if expires_at is not None:
             validate_deadline(expires_at)
             selected['expires_at'] = min(selected['expires_at'] or expires_at, expires_at)
+        boundaries = {capability: FileBoundary(folder, capability, self.home)
+                      for capability, folder in selected['folders'].items()}
         private_directory(self.path.parent, repair_owned=True)
         with private_lock(self.path.with_suffix('.lock')):
             if not change and self.active(self.read(), thread):
@@ -201,8 +209,25 @@ class Policy:
             with tempfile.TemporaryDirectory(prefix='review-', dir=self.path.parent) as temporary:
                 captured = inspect(Path(temporary) / 'setup.json', **({'delivery': selected['delivery']} if choose_host else {}))
             for capability, folder in selected['folders'].items():
-                if folder == managed[capability]:
-                    private_directory(Path(folder))
+                boundary = boundaries[capability]
+                try:
+                    if folder == managed[capability]:
+                        with boundary.directory(boundary.root[:-1]) as parent:
+                            name = boundary.root[-1]
+                            try:
+                                os.mkdir(name, mode=0o700, dir_fd=parent.fd)
+                            except FileExistsError:
+                                pass
+                            with parent.child(name) as child:
+                                child.verify()
+                                info = os.fstat(child.fd)
+                                if info.st_uid != os.getuid() or stat.S_IMODE(info.st_mode) & 0o077:
+                                    raise Blocked('The dedicated Pantheon folder must be owner-only')
+                    else:
+                        with boundary.directory(boundary.root):
+                            pass
+                except OSError:
+                    raise Blocked('Choose an existing setup folder without symlinks') from None
             tools = (*codex_trust.ROUTINE, 'pantheon_setup',
                      *(codex_trust.TRANSFERS if selected['transfers'] else ()),
                      *(codex_trust.SITES if selected['sites'] else ()))
@@ -305,7 +330,10 @@ def allowed(config):
 
 
 def require_tool(config, name, args):
+    local_capability = FILE_CAPABILITIES.get(name)
     if 'codex_setup_policy' not in config:
+        if local_capability:
+            raise Blocked('Local file operations require a folder approved in native Pantheon setup')
         return
     # Cleanup remains available after revocation, without granting new activity.
     if name in ('pantheon_doctor', 'pantheon_finish_wake') or (name == 'pantheon_command' and args.get('op') == 'withdraw'):
@@ -315,13 +343,16 @@ def require_tool(config, name, args):
     if capability:
         if value.get(capability) is not True:
             raise Blocked('This capability was not selected during setup; review setup before using it')
-        local = args.get('directory' if capability == 'sites' else 'path')
-        if local is not None:
-            target = Path(local)
-            folder = Path(value['folders'][capability])
-            if (not target.is_absolute() or any(p.is_symlink() for p in (target, *target.parents))
-                    or not target.resolve().is_relative_to(folder)):
-                raise Blocked('Local file is outside the folder selected during setup')
+        if local_capability:
+            folders = value.get('folders', {})
+            folder = folders.get(local_capability)
+            if not folder:
+                raise Blocked('Select a folder for this capability in native Pantheon setup')
+            native_home = Path(value['home'])
+            boundary = FileBoundary(folder, local_capability, native_home)
+            site = local_capability == 'sites'
+            boundary.target(args.get('directory' if site else 'path'), directory=site)
+            return boundary
     elif name not in (*codex_trust.ROUTINE, 'pantheon_join'):
         # Newly published remote tools keep the native default prompt. Setup
         # never adds them to the exact host allowlist. They cannot introduce a
