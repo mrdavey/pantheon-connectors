@@ -137,7 +137,7 @@ class OutputNotices:
             raise Blocked("Default-daemon access is not approved")
         notification_policy.policy(self.config, 'codex')
 
-    def read(self):
+    def scope(self):
         scope = {key:self.config.get(key) for key in ('url', 'codex_home', 'codex_executable',
                 'app_server_socket', 'owner_socket_identity', 'trial_expires_at', 'max_notices')}
         if selected(self.config) == DEFAULT_DAEMON:
@@ -150,6 +150,10 @@ class OutputNotices:
         normalized = notification_policy.policy(self.config, 'codex')
         scope.pop('max_notices')
         scope['notification_policy'] = normalized
+        return scope
+
+    def read(self):
+        scope = self.scope()
         data = load_private(self.path) if self.path.exists() else dict(binding=self.binding, scope=scope, notices={}, withdrawn=[])
         saved_scope = dict(data.get('scope', {}))
         if 'notification_policy' not in saved_scope:

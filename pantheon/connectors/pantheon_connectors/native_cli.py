@@ -149,6 +149,19 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
                 "notice": "No turn requested. The owner must approve the bounded trial and start its receiver."}
     service = Onboarding(config)
     service.allowance_check = allowance
+    if name == 'pantheon_resume':
+        if not isinstance(args, dict) or set(args) != {'connection'}:
+            raise Blocked('Resume requires one existing connection')
+        check(binding)
+        _, _, client = service.member(args['connection'], binding)
+        view = client.request('/v1/chat')
+        service.require_allowance()
+        state = view.get('chat', {}).get('state')
+        if state not in ('waiting', 'active'):
+            raise Blocked('Existing Pantheon chat is no longer open')
+        return dict(connection=args['connection'], status='resume_validated',
+                    chat_state=state, delivery_verified=False,
+                    next='Receive pending messages, read and explicitly ACK them. Preserve existing wake receipts; do not redeem or renew consent.')
     # Withdrawing an existing membership needs its authenticated binding, but
     # must remain possible after the trial or its queue executable stops working.
     withdrawing = (binding['surface'] in ('native-queue', 'app-server-tool-output') and name == 'pantheon_command'

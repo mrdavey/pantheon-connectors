@@ -181,3 +181,53 @@ class DefaultDaemonOwner(Owner):
 
 def owner_for(config):
     return DefaultDaemonOwner(config) if selected(config) == DEFAULT_DAEMON else Owner(config)
+
+
+def recover_endpoint(setup_file, thread):
+    """Refresh a restarted official socket only after checking the same live owner.
+
+    Runtime version, home, conversation, provider/account and consent stay fixed.
+    This is never used by ordinary polling or to start/resume a native thread.
+    """
+    from .state import load_private, save_private
+    from .onboarding import private_lock, trial_allowed
+    from .native_cli import binding_for
+    config = load_private(setup_file)
+    binding_for(config, thread)
+    if selected(config) != DEFAULT_DAEMON or not trial_allowed(config):
+        return
+    actual = dict(discover(config['codex_executable'], pathlib.Path(config['codex_home'])))
+    if actual.get('runtime_version') != config['binding']['version']:
+        raise Blocked('Native runtime changed; review this connection before resuming')
+    if 'runtime_version' not in config.get('daemon_endpoint', {}):
+        actual.pop('runtime_version')
+    if actual == config.get('daemon_endpoint'):
+        return
+    candidate = dict(config, daemon_endpoint=actual, app_server_socket=actual['target'],
+                     owner_socket_identity=actual['target_identity'])
+    # DefaultDaemonOwner checks supported discovery, loaded conversation, config
+    # provenance and the originally reviewed provider/account before any write.
+    owner = DefaultDaemonOwner(candidate)
+    owner.close()
+    with private_lock(setup_file.parent / 'setup.lock'):
+        if load_private(setup_file) != config or not trial_allowed(config):
+            raise Blocked('Consent changed during endpoint recovery')
+        from .codex_output import OutputNotices, notice_lock
+        prior_notices, next_notices = OutputNotices(config), OutputNotices(candidate)
+        with notice_lock(prior_notices.lock, lambda: None):
+            if prior_notices.path.exists():
+                data = load_private(prior_notices.path)
+                # Journal first, setup second. Retrying after a crash between
+                # writes accepts either exact scope and preserves every receipt.
+                scope = dict(data.get('scope', {}))
+                if 'notification_policy' not in scope:
+                    from . import notification_policy
+                    scope['notification_policy'] = notification_policy.policy(scope, 'codex')
+                    scope.pop('max_notices', None)
+                if (data.get('binding') != config['binding']
+                        or scope not in (prior_notices.scope(), next_notices.scope())):
+                    raise Blocked('Notice journal changed during endpoint recovery')
+                data['scope'] = next_notices.scope()
+                save_private(prior_notices.path, data)
+            save_private(setup_file, candidate)
+    return True

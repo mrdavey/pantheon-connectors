@@ -22,3 +22,8 @@ var HostedOnboardingV3InviteSetup []byte
 //
 //go:embed hosted-onboarding-v3-setup-feedback.md
 var HostedOnboardingV3SetupFeedback []byte
+
+// Same-conversation recovery belongs to 0.9.14+; prior guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-resume.md
+var HostedOnboardingV3Resume []byte

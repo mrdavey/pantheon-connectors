@@ -9,6 +9,11 @@ import sys
 import threading
 import secrets
 import time
+import fcntl
+import os
+import stat
+import hashlib
+from pathlib import Path
 from .codex_audit import Audit, failure
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
@@ -31,10 +36,14 @@ WAKE_TOOLS = [dict(name=name, description='Use only connection/wake_id from the 
     inputSchema=dict(type='object', properties={key: {'type': 'string'} for key in ('connection', 'wake_id')},
     required=['connection', 'wake_id'], additionalProperties=False)) for name in ('pantheon_begin_wake', 'pantheon_finish_wake')]
 
+RESUME_TOOL = dict(name='pantheon_resume', description='Restore this conversation’s existing Pantheon receiver after a reload. Validates saved membership and unchanged consent; never joins or extends its lifetime.',
+                   inputSchema=dict(type='object', properties={'connection': {'type': 'string'}},
+                                    required=['connection'], additionalProperties=False))
+
 
 class Server:
     def __init__(self, setup_file, *, loaded_setup_id=None):
-        self.setup_file = setup_file
+        self.setup_file = Path(setup_file)
         self.loaded_setup_id = loaded_setup_id
         self.workers = {}
         self.status = {}
@@ -51,8 +60,27 @@ class Server:
                 # Failed/expired workers require a new explicit join/recovery,
                 # but an uncertain journal is never reset or replayed.
                 if previous[1].is_alive():
-                    return
-            self.audit.emit('receiver_started', connection=connection)
+                    if previous[0].is_set():
+                        raise Blocked('Receiver is still stopping; preserve its journal and retry after it stops')
+                    return 'running'
+            # MCP processes can overlap during native reload. One OS lease owns
+            # a receiver; a process crash releases it without resetting delivery.
+            lease_path = self.setup_file.with_name('receiver-' + hashlib.sha256(connection.encode()).hexdigest() + '.lock')
+            lease = os.open(lease_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+            info = os.fstat(lease)
+            if not stat.S_ISREG(info.st_mode) or info.st_uid != os.getuid() or info.st_mode & 0o077:
+                os.close(lease)
+                raise Blocked('Receiver lease must be an owner-only regular file')
+            try:
+                fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                os.close(lease)
+                return 'running_in_other_plugin_process'
+            try:
+                self.audit.emit('receiver_started', connection=connection)
+            except Exception:
+                os.close(lease)
+                raise
             stop = threading.Event()
             def report(value):
                 with self.lock:
@@ -77,9 +105,17 @@ class Server:
                     except Blocked:
                         with self.lock:
                             self.status[connection] = dict(status='stopped', reason='audit_unavailable')
+                finally:
+                    os.close(lease)
             worker = threading.Thread(target=work, daemon=True)
             self.workers[connection] = (stop, worker)
-            worker.start()
+            try:
+                worker.start()
+            except Exception:
+                self.workers.pop(connection, None)
+                os.close(lease)
+                raise
+            return 'started'
 
     def handle(self, method, params):
         if method != 'tools/call':
@@ -118,7 +154,7 @@ class Server:
         if method == 'ping':
             return {}
         if method == 'tools/list':
-            return {'tools': [PREPARE] + TOOLS + WAKE_TOOLS}
+            return {'tools': [PREPARE, RESUME_TOOL] + TOOLS + WAKE_TOOLS}
         if method != 'tools/call':
             raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
@@ -142,8 +178,8 @@ class Server:
                 if not isinstance(ref, dict) or ref.get('id') != self.loaded_setup_id:
                     raise Blocked('Reload Pantheon normally in this same Codex conversation to use the current native setup')
             value = execute(config, name, args, native_thread=thread, setup_file=self.setup_file)
-            if name == 'pantheon_join' and value.get('connection'):
-                self.start(value['connection'])
+            if name in ('pantheon_join', 'pantheon_resume') and value.get('connection'):
+                value['receiver_status'] = self.start(value['connection'])
             if name == 'pantheon_begin_wake' and mode == GUI_QUEUE and value.get('status') == 'draining':
                 # A native-delivered wake can recover a reader stopped by an
                 # earlier plugin process. start coalesces an existing worker.

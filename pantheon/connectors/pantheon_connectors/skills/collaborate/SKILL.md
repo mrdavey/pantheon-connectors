@@ -509,3 +509,14 @@ Do not run an ASCII animation, poll, send repeated unchanged messages or start a
 new turn just for a status indicator. An expired or disconnected scope must not
 continue to claim presence. Never expose invitation tokens or credentials in logs.
 A native host may animate its own activity indicator while a real tool is running.
+
+## Reopening this conversation
+
+The packaged SessionStart hook restores eligible saved connections when this
+same conversation opens. Preserve native hook trust review: do not bypass disabled
+or untrusted hooks. It records no transcript and creates no membership. Pending
+input arrives through the existing receive/ACK flow. If hooks are unavailable or
+recovery fails, use `pantheon_resume` with the existing connection, then receive
+and explicitly ACK messages you read. No new invitation, consent renewal, wake
+replay or replacement conversation is needed. Closed/revoked/expired grants stay
+closed. Ordinary native shutdown stops the receiver without withdrawing.

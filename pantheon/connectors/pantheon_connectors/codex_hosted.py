@@ -13,7 +13,7 @@ from .codex_audit import Audit
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
 from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, NATIVE_SETUP, descriptor, selected
-from .codex_mcp import Server, WAKE_TOOLS
+from .codex_mcp import Server, WAKE_TOOLS, RESUME_TOOL
 from .codex_setup import prepare, cli_compatibility
 from .codex_compatibility import require_capabilities
 from .hosted_discovery import TRUSTED_ORIGIN, fetch_discovery, validate_hosted_admission
@@ -58,6 +58,9 @@ class HostedServer:
         self.children = {}
         self.lock = threading.RLock()
         self.catalogue = None
+        self.closed = False
+        from .codex_reopen import Opens
+        self.opens = Opens(self.root, self.resume_conversation)
         self.setup_policy = codex_setup_policy.Policy(self.root.parent / 'setup-policy.json')
         # Native tool approval settings are loaded with the host conversation.
         # Saving preferences cannot refresh an already-running host. Fence this
@@ -76,8 +79,36 @@ class HostedServer:
             self.catalogue = ToolSnapshot(TRUSTED_ORIGIN, TOOLS)
 
     def start_notifications(self, notify):
+        self.opens.start()
         if self.catalogue:
             self.catalogue.watch(self.broker_active, notify)
+
+    def resume_conversation(self, thread):
+        """Only a native reopen event selects the conversation; never scan grants globally."""
+        from itertools import islice
+        folder = self.root / hashlib.sha256(thread.encode()).hexdigest()
+        private_directory(folder)
+        complete = True
+        for path in islice(folder.glob('*/setup.json'), 20):
+            if self.opens.stop.is_set():
+                return
+            try:
+                private_directory(path.parent)
+                config = load_private(path)
+                connection = path.parent.name
+                if (config.get('binding', {}).get('session') != thread
+                        or config.get('invitation_connection') != connection
+                        or not runtime_active(config)):
+                    continue
+                result = self.handle('tools/call', dict(name='pantheon_resume', arguments={'connection': connection},
+                                                       _meta={'threadId': thread}))
+                if result['structuredContent'].get('receiver_status') == 'running_in_other_plugin_process':
+                    complete = False  # The previous process may still be unloading.
+            except Exception:
+                # One revoked/expired scope cannot prevent another from recovering.
+                # Explicit resume/doctor reports the original guard failure.
+                complete = False
+        return complete
 
     def broker_active(self):
         with self.lock:
@@ -104,7 +135,7 @@ class HostedServer:
             tools=[{**tool,'inputSchema':dict(type='object',properties={'connection':{'type':'string'}},required=['connection'],additionalProperties=False)} if tool['name']=='pantheon_doctor' else tool for tool in (self.catalogue.tools() if self.catalogue else TOOLS)]
             setup = [codex_setup_policy.TOOL] if self.setup_enabled else [PREPARE, AUTHORIZE]
             connector = codex_setup_policy.CONNECT_TOOL if self.setup_enabled else connect.TOOL
-            return {'tools':[connector]+setup+tools+WAKE_TOOLS}
+            return {'tools':[connector, RESUME_TOOL]+setup+tools+WAKE_TOOLS}
         if method != 'tools/call': raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
         name,args=params.get('name'),params.get('arguments',{})
@@ -136,6 +167,19 @@ class HostedServer:
             # Public invitation inspection needs no saved credentials or daemon access.
             return self.result(Onboarding({'url':TRUSTED_ORIGIN}).preview(args['link']))
         with self.lock:
+            if self.closed:
+                raise Blocked('Plugin is closing')
+            if name == 'pantheon_resume':
+                if set(args) != {'connection'}:
+                    raise Blocked('Resume requires one existing connection')
+                from .codex_daemon import recover_endpoint
+                if recover_endpoint(path, thread):
+                    child = self.children.pop((thread, connection), None)
+                    if child:
+                        # Release the stale owner's receiver before starting one
+                        # against the freshly validated endpoint. Its OS lease
+                        # still fences a receiver that has not stopped yet.
+                        child.close()
             if name == 'pantheon_connect':
                 (codex_setup_policy.validate_connect if self.setup_enabled else connect.validate)(args)
                 for directory in [self.root.parent, self.root, path.parent.parent, path.parent]:
@@ -400,6 +444,9 @@ class HostedServer:
     @staticmethod
     def result(value): return dict(content=[dict(type='text',text=json.dumps(value))],structuredContent=value)
     def close(self):
+        self.opens.close()
         if self.catalogue:
             self.catalogue.close()
-        for child in self.children.values(): child.close()
+        with self.lock:
+            self.closed = True
+            for child in self.children.values(): child.close()
