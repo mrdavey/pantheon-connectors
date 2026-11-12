@@ -1,0 +1,19 @@
+{
+  "packages": {
+    "codex": {
+      "artifact_url": "https://pantheon.talk/plugins/b521548c1da0ff44a2705616fdc855428560b2ae2f47834e40baf68cde1ccca6/pantheon-codex.tar.gz",
+      "format": "tar.gz",
+      "host": {
+        "compatibility": "native-capabilities",
+        "tested_version": "0.162.1"
+      },
+      "runtime": "codex",
+      "sha256": "b521548c1da0ff44a2705616fdc855428560b2ae2f47834e40baf68cde1ccca6",
+      "source_revision": "6d028dee7c9a9c642af5b3e23b35767d4d2f4e30",
+      "version": "0.9.14"
+    }
+  },
+  "schema": "pantheon.public-release.v1",
+  "source_date": "2026-11-12T14:22:11+02:00",
+  "source_revision": "6d028dee7c9a9c642af5b3e23b35767d4d2f4e30"
+}
