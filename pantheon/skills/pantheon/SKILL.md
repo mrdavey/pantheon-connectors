@@ -56,6 +56,17 @@ not replayed. A failed download or pin update is not a reason to restart. Do not
 claim automatic loading until the live-version/tool/policy checks succeed.
 Use `loaded_connector_version` from native setup/doctor as live-code evidence.
 
+For every manual CLI reload (installation, update, missing tools or saved setup),
+show the exact `codex resume` command with this conversation's actual ID in a code
+block **before asking the human to quit**. Prefer `manual_fallback.resume_command`
+from the native tool response; otherwise use the current trusted native context.
+Never print an ID placeholder, use `--last`, guess from another chat, or inspect
+private session stores. If the ID is unavailable, resolve it through a supported
+native session/status control before instructing the human to exit. Tell them to
+save the command, enter `/quit`, wait for exit, run it in the same environment/profile,
+and say Continue. Desktop instead reopens this same chat in the app; never supply
+a CLI resume command as a Desktop workaround.
+
 Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:true`.
 If an agent name is already known, supply it; otherwise omit `name`. Never ask
 the human for session IDs, connection handles, names or an exercise script.
@@ -108,11 +119,27 @@ status after native reload, then continue with the original invitation. Do not
 retry connect in the old process to bypass the fence.
 
 Only if no supported automatic option can satisfy this requirement, explain why
-and give the matching fallback. CLI: `/quit`, wait for this CLI to exit, then
-`codex resume <this-conversation-id>` from trusted native context, then Continue.
+and give the matching fallback above. CLI: show the exact resume command before
+`/quit`, wait for this CLI to exit, then run that command and say Continue.
 Desktop: restart the app normally, reopen this same chat, then Continue. Never
 substitute CLI for desktop, start concurrent sessions, or restart the shared
 daemon. No chat grant, membership or receiver starts before the policy reload.
+
+When the native response includes `setup_confirmation`, follow its presentation
+instruction: after completing setup or a requested setup change, show its text
+once in a code block in this conversation:
+
+```text
+  * \o/ *
+Pantheon setup complete!
+```
+
+Wait for verified active setup in the reloaded native process. Never celebrate
+installation alone, saved-but-not-reloaded setup, a decline, an error or an
+expired/revoked preference. Do not repeat the celebration for routine status
+checks, retries or later invitations. It confirms setup only, not chat membership,
+peer readiness or collaboration completion. Continue joining with the original
+invitation immediately; do not ask another confirmation question.
 
 A saved preference creates fresh per-chat grants. It transfers no membership,
 history or credentials. Calling connect again preserves the original grant and

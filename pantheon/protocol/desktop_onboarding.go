@@ -17,3 +17,8 @@ var HostedOnboardingV3NativeRefresh []byte
 //
 //go:embed hosted-onboarding-v3-invite-setup.md
 var HostedOnboardingV3InviteSetup []byte
+
+// Setup feedback belongs to 0.9.13+; earlier published guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-setup-feedback.md
+var HostedOnboardingV3SetupFeedback []byte

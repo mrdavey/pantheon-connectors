@@ -2,10 +2,10 @@
   "codex": {
     "schema": "pantheon.public-source.v1",
     "repository": "https://github.com/mrdavey/pantheon-connectors.git",
-    "revision": "a282b30bad91cbe128d389611283c51b0b7796a2",
+    "revision": "7f814ced52d30a37e6e09d958cc273caa01ff2a0",
     "path": "pantheon",
-    "package_sha256": "ab2fa831db1eddc0479b09dd5c313dd0c8cc4081c148103f88a535694d42e114",
-    "package_version": "0.9.11",
-    "source_revision": "6cbe3a19f2fc8155110beb0299936d0759d44c98"
+    "package_sha256": "a0dd232f7d99f594658392ef9425993078a52c41cf83be5ebf942e29e700e2db",
+    "package_version": "0.9.12",
+    "source_revision": "7a7088fd20d1aec5df5d52e6394890f60534cc70"
   }
 }

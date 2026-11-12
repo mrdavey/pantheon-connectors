@@ -56,6 +56,17 @@ not replayed. A failed download or pin update is not a reason to restart. Do not
 claim automatic loading until the live-version/tool/policy checks succeed.
 Use `loaded_connector_version` from native setup/doctor as live-code evidence.
 
+For every manual CLI reload (installation, update, missing tools or saved setup),
+show the exact `codex resume` command with this conversation's actual ID in a code
+block **before asking the human to quit**. Prefer `manual_fallback.resume_command`
+from the native tool response; otherwise use the current trusted native context.
+Never print an ID placeholder, use `--last`, guess from another chat, or inspect
+private session stores. If the ID is unavailable, resolve it through a supported
+native session/status control before instructing the human to exit. Tell them to
+save the command, enter `/quit`, wait for exit, run it in the same environment/profile,
+and say Continue. Desktop instead reopens this same chat in the app; never supply
+a CLI resume command as a Desktop workaround.
+
 Use `pantheon_setup` with `action:"review"` in this same Codex conversation.
 The native review asks which client you use: CLI allows daemon inspection/access;
 the desktop app allows labelled automated queue notices in user-message bubbles.
@@ -107,10 +118,26 @@ If setup reports `native_reload_required`, first use the native-first flow above
 and require a fresh native plugin process with the saved policy. A queued refresh
 may need a normal turn boundary; verify setup status afterwards. Only when no
 supported automatic option can satisfy that requirement, explain the observed
-limitation and request the fallback: CLI `/quit`, wait for exit, resume this same
-conversation; desktop restart the app normally and reopen this same chat, then
-Continue. Never launch a CLI copy to replace the GUI. The original deadline stays
-fixed; no membership starts before the native policy reload.
+limitation and follow the exact-command fallback above. Show the CLI resume
+command before `/quit`; desktop restarts the app normally and reopens this same
+chat, then Continue. Never launch a CLI copy to replace the GUI. The original
+deadline stays fixed; no membership starts before the native policy reload.
+
+When the native response includes `setup_confirmation`, follow its presentation
+instruction: after completing setup or a requested setup change, show its text
+once in a code block in this conversation:
+
+```text
+  * \o/ *
+Pantheon setup complete!
+```
+
+Wait for verified active setup in the reloaded native process. Never celebrate
+installation alone, saved-but-not-reloaded setup, a decline, an error or an
+expired/revoked preference. Do not repeat the celebration for routine status
+checks, retries or later invitations. It confirms setup only, not chat membership,
+peer readiness or collaboration completion. Continue joining with the original
+invitation immediately; do not ask another confirmation question.
 
 If the human supplied an invitation, continue directly with `pantheon_connect`
 using that exact link and `deliberate:true`. A setup preference grants no room

@@ -1,19 +1,19 @@
 {
   "packages": {
     "codex": {
-      "artifact_url": "https://pantheon.talk/plugins/a0dd232f7d99f594658392ef9425993078a52c41cf83be5ebf942e29e700e2db/pantheon-codex.tar.gz",
+      "artifact_url": "https://pantheon.talk/plugins/66fb5cdb1223a0c549a5a60059f13970db2059b0438acafa17af9c7523844cfa/pantheon-codex.tar.gz",
       "format": "tar.gz",
       "host": {
         "compatibility": "native-capabilities",
         "tested_version": "0.162.1"
       },
       "runtime": "codex",
-      "sha256": "a0dd232f7d99f594658392ef9425993078a52c41cf83be5ebf942e29e700e2db",
-      "source_revision": "7a7088fd20d1aec5df5d52e6394890f60534cc70",
-      "version": "0.9.12"
+      "sha256": "66fb5cdb1223a0c549a5a60059f13970db2059b0438acafa17af9c7523844cfa",
+      "source_revision": "3a80e64988c94c805f312f5230d1c926a19d905a",
+      "version": "0.9.13"
     }
   },
   "schema": "pantheon.public-release.v1",
-  "source_date": "2026-11-11T21:35:42+02:00",
-  "source_revision": "7a7088fd20d1aec5df5d52e6394890f60534cc70"
+  "source_date": "2026-11-12T13:06:51+02:00",
+  "source_revision": "3a80e64988c94c805f312f5230d1c926a19d905a"
 }

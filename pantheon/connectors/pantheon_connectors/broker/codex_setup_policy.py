@@ -41,44 +41,42 @@ CONNECT_TOOL = {'name': 'pantheon_connect', 'description':
         'link': {'type': 'string'}, 'deliberate': {'type': 'boolean'}, 'name': {'type': 'string'},
         'expires_at': {'type': 'number', 'description': 'Optional original UTC epoch deadline; never renew on retry.'},
     }, 'required': ['link', 'deliberate'], 'additionalProperties': False}}
+COLLABORATION_DESCRIPTION = (
+    'Join only chats you invite Codex to and receive replies in the exact invited conversation, using its existing provider/account at normal cost. '
+    'Allow exact routine messaging tools in this profile; existing native denials and unrelated shell/file controls remain. '
+    'At most three active connections. Saved choices never share membership or renew old grants.')
+DAEMON_DESCRIPTION = ('Allow access to the broader local Codex daemon API; Pantheon limits activity to invited conversations. '
+    'Some providers do not expose exact account identity.')
 FORM = {'type': 'object', 'properties': {
     'collaboration': {'type': 'boolean', 'title': 'Allow Pantheon collaboration', 'default': True,
-        'description': 'Inspect/access the broader local Codex daemon, bind only your invited conversations, receive incoming replies and use their existing provider/account at normal usage cost. Approve exact routine messaging tools in this Codex profile.'},
+        'description': COLLABORATION_DESCRIPTION + '\n\n' + DAEMON_DESCRIPTION},
     # Codex CLI 0.162.1 rejects the entire form when any field is numeric.
     # Its supported single-select string enum preserves a real native choice.
     'minutes': {'type': 'string', 'title': 'Time limit',
         'enum': ['0', '15', '30', '45', '60'],
         'enumNames': ['Until each chat ends', '15 minutes', '30 minutes', '45 minutes', '60 minutes'], 'default': '0',
-        'description': 'A nonzero limit is one fixed window starting now, including any later invitation; retries never extend it.'},
+        'description': 'Each chat stops on closure, withdrawal or expiry. A nonzero limit starts now and also covers later invitations; retries never extend it.'},
     'transfers': {'type': 'boolean', 'title': 'File handoff (optional)', 'default': True,
-        'description': 'Your agent can send a draft or test output to one collaborator for review, or receive a file it needs to continue the work. Files use the dedicated handoff folder and have size and expiry limits.'},
+        'description': 'Optional; turn off to collaborate without file handoff. Allow routine file tools to send a draft or test output to one collaborator for review, or receive a needed file. Use the dedicated folder, with one recipient and existing size/expiry limits. Your agent decides when to use them within task and chat permissions.'},
     'transfer_folder': {'type': 'string', 'title': 'File handoff folder (absolute path)', 'default': ''},
     'sites': {'type': 'boolean', 'title': 'Public website publishing (optional)', 'default': True,
-        'description': 'Your agent can publish a demo or report as a public website so people can open the result in a browser. Publishing uses static files from the dedicated sites folder and requires separate permission in the chat. Sites may stay online after the chat ends.'},
+        'description': 'Optional; turn off to collaborate without publishing. Allow routine tools to publish public static sites, such as demos or reports, from the dedicated folder so people can open the result in a browser. Your agent decides when to publish within task permissions and separately granted chat website authority. Sites may remain online after chat closure.'},
     'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
 }, 'required': ['collaboration', 'minutes', 'transfers', 'sites']}
-MESSAGE = ('We\'ll collect Pantheon permissions now so your agent can collaborate without stopping for routine approvals. '
-           'Your choices are saved for future invitations. You can change or revoke them anytime.\n\n'
-           'Allow Pantheon to join chats from invitations you give Codex, receive replies and collaborate using each conversation\'s existing provider/account at its normal cost. '
-           'This includes the broader local Codex daemon API; Pantheon restricts use to invited conversations. Each chat stops on closure, withdrawal or expiry, with at most three active connections. '
-           'Remembered choices never share membership or renew old grants. Some providers do not expose exact account identity. '
-           'File handoff and public website publishing are optional and start selected in a new setup. Clear either option to collaborate without it. '
-           'For options you allow, your agent decides whether using them would help with the task, within the permissions granted in that chat. '
-           'Change setup to customize folders or turn features off. Existing native denials and unrelated shell/file controls remain. Revoke anytime with pantheon_setup.')
+MESSAGE = ('Your choices are saved for future invitations. '
+           'Change options or folders, or revoke access anytime with pantheon_setup.')
 
 # Only a package that explicitly supports both transports offers this choice.
 # Existing daemon-only preferences keep their original semantics on upgrade.
 GUI_FORM = copy.deepcopy(FORM)
 GUI_FORM['properties'] = {'host': {'type': 'string', 'title': 'Where are you using Codex?',
     'enum': ['cli', 'desktop'], 'enumNames': ['Codex CLI', 'Codex desktop app'],
-    'description': 'CLI uses its local daemon. Desktop uses the official queue: clearly labelled automated notices appear as user-message bubbles and can start turns.'}, **GUI_FORM['properties']}
+    'description': 'CLI: ' + DAEMON_DESCRIPTION + '\n\n'
+        'Desktop: allow official queue notices in clearly labelled automated user-message bubbles. '
+        'Notices carry no peer content or new permission. Accepted entries cannot be cancelled by Pantheon and may start a turn after revocation. '
+        'Desktop provider/account identity cannot be independently inspected.'}, **GUI_FORM['properties']}
 GUI_FORM['required'] = ['host', *FORM['required']]
-GUI_FORM['properties']['collaboration']['description'] = ('Join your invited conversations and receive replies using their existing provider/account at normal cost. '
-    'CLI allows broader local daemon access; Desktop allows labelled automated user-message queue notices. Approve exact routine messaging tools in this profile.')
-GUI_MESSAGE = MESSAGE.replace('This includes the broader local Codex daemon API; Pantheon restricts use to invited conversations.',
-    'Select your current Codex client. CLI uses the broader local daemon API; Desktop uses the official queue with clearly labelled automated notices in user-message bubbles. '
-    'Those notices carry no peer content or new permission. Accepted queue entries cannot be cancelled by Pantheon and may still start a turn after revocation. '
-    'Pantheon restricts activity to the exact invited conversation. Desktop provider/account identity cannot be independently inspected through this route.')
+GUI_FORM['properties']['collaboration']['description'] = COLLABORATION_DESCRIPTION
 
 
 def validate_connect(args):
@@ -177,26 +175,30 @@ class Policy:
             return self.status(thread)
         # Nothing sensitive is inspected and no native policy is changed before
         # the real client's correlated acceptance response.
-        message = ('Changing setup stops existing derived grants; they cannot be reopened. ' if change else '') + (GUI_MESSAGE if choose_host else MESSAGE)
-        if expires_at is not None:
-            message += (' This review has a maximum deadline of ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(expires_at))
-                        + ', including later invitations. An earlier selected limit still applies.')
+        message = ('Changing setup stops existing derived grants; they cannot be reopened. ' if change else '') + MESSAGE
         managed = default_folders(self.home / 'pantheon')
         defaults = dict(managed)
         form = copy.deepcopy(GUI_FORM if choose_host else FORM)
+        if expires_at is not None:
+            form['properties']['minutes']['description'] += (
+                '\nMaximum deadline: ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(expires_at))
+                + ', including later invitations. An earlier selected limit still applies.')
         previous = self.read()
         for capability, field in (('transfers', 'transfer_folder'), ('sites', 'site_folder')):
             if previous:
                 form['properties'][capability]['default'] = previous[capability]
+            else:
+                form['properties'][capability]['description'] += ' Selected by default for new setups.'
             folder = (previous or {}).get('folders', {}).get(capability, defaults[capability])
             if change:
                 form['properties'][field]['default'] = folder
             else:
                 del form['properties'][field]
+                form['properties'][capability]['description'] += '\nFolder: ' + folder
             defaults[capability] = folder
-        message += ' File handoff folder: ' + defaults['transfers'] + '. Website folder: ' + defaults['sites'] + '.'
         response = elicit(message, form)
-        selected = choices(response, time.time(), form, defaults=defaults, creatable=managed.values())
+        selected = choices(response, time.time(), form,
+                           defaults=defaults, creatable=managed.values())
         if selected is None:
             action = response.get('action') if isinstance(response, dict) else None
             if action == 'decline':

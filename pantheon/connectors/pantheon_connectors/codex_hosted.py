@@ -5,6 +5,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shlex
 import threading
 import time
 from uuid import UUID
@@ -179,6 +180,8 @@ class HostedServer:
                         receive=lambda handle: call('pantheon_receive', {'connection': handle}),
                         join=lambda: call('pantheon_join', dict(link=args['link'], deliberate=True,
                             **({'name': args['name']} if 'name' in args else {}))))
+                if self.setup_enabled and value.get('onboarding_status') == 'connected':
+                    value['setup_confirmation'] = status['setup_confirmation']
                 return self.result(value)
             if name=='pantheon_prepare':
                 if (not {'link','deliberate'} <= set(args) or set(args)-{'link','deliberate','inspect_default_daemon'}
@@ -372,14 +375,26 @@ class HostedServer:
         if value:
             status['delivery'] = value.get('delivery', DEFAULT_DAEMON)
         if status['status'] == 'setup_active' and self.setup_policy.read()['id'] != self.loaded_setup_id:
+            resume_command = shlex.join(['codex', 'resume', thread])
             fallback = ('Restart the Codex desktop app normally, reopen this same chat, then Continue.'
                         if status['delivery'] == GUI_QUEUE else
-                        f'Enter /quit, wait for Codex to exit, run codex resume {UUID(thread)}, then say Continue.')
+                        'Before quitting, save this command to resume this conversation:\n\n'
+                        + resume_command + '\n\nEnter /quit and wait for this CLI to exit. '
+                        'Run the saved command in the same environment/profile, then say Continue in the resumed conversation.')
             return {**status, 'status': 'native_reload_required', 'membership_started': False,
                     'next_action': 'try_native_reload_same_conversation',
                     'reload_requirement': 'fresh_native_plugin_process',
-                    'manual_fallback': {'when': 'no_supported_automatic_option', 'instruction': fallback},
+                    'manual_fallback': {'when': 'no_supported_automatic_option', 'instruction': fallback,
+                                        **({'resume_command': resume_command} if status['delivery'] != GUI_QUEUE else {})},
                     'notice': 'Setup saved. First inspect and use supported native in-session plugin reload controls for this same conversation. A queued refresh is not completion: follow the host turn boundary, then verify setup status from a fresh native plugin process. Ask the human to restart only when no supported automatic option is available or it cannot satisfy this requirement; explain the observed limitation. Preserve native approvals and denials. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not retry tools in this old process, call private host RPCs, launch a replacement conversation, or restart the shared daemon to bypass reload.'}
+        if status['status'] == 'setup_active':
+            status['setup_confirmation'] = {
+                'text': '  * \\o/ *\nPantheon setup complete!',
+                'instruction': 'After completing installation/setup or a requested setup change, show this once in a code block in this conversation. '
+                               'Do not repeat it for routine status checks, retries or later invitations. '
+                               'This confirms setup, not chat membership, peer readiness or collaboration completion. '
+                               'Continue the original invitation without another confirmation question.',
+            }
         return status
 
     @staticmethod
