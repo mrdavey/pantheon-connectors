@@ -30,6 +30,9 @@ def run(setup_file, connection, stop, report=None, audit=None):
                         notices.allowed()
                     owner = owner_for(initial) if initial.get("delivery") == DEFAULT_DAEMON else Owner(initial)
                     notices.owner = owner
+                    if initial.get('delivery') == DEFAULT_DAEMON:
+                        from .codex_reopen import record_receiver
+                        record_receiver(setup_file, initial, connection)
                 if not owner.rpc.pending.empty():
                     raise Blocked('Native request needs a supported host handler; never auto-approve')
                 value = notices.tick(connection)

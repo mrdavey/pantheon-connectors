@@ -71,7 +71,11 @@ class Owner:
             raise Blocked('An explicit tool-output owner binding is required')
         self.rpc = None
         self.verify_socket()
-        self.rpc = AttachedAppServer(config['app_server_socket'], config['binding']['version'],
+        # Membership keeps its original wire binding across compatible native
+        # updates. The separately verified endpoint pins the current transport.
+        version = (config.get('daemon_endpoint', {}).get('runtime_version', config['binding']['version'])
+                   if selected(config) == DEFAULT_DAEMON else config['binding']['version'])
+        self.rpc = AttachedAppServer(config['app_server_socket'], version,
                                      config['binding']['profile'], config['codex_executable'])
         try:
             self.check()

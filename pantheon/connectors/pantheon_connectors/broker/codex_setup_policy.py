@@ -363,7 +363,9 @@ def require_tool(config, name, args):
             site = local_capability == 'sites'
             boundary.target(args.get('directory' if site else 'path'), directory=site)
             return boundary
-    elif name not in (*codex_trust.ROUTINE, 'pantheon_join'):
+    elif name not in (*codex_trust.ROUTINE, 'pantheon_join', 'pantheon_resume'):
+        # Resume is a local tool, guarded by the active setup above and the
+        # existing connection's runtime/membership checks in native_cli.
         # Newly published remote tools keep the native default prompt. Setup
         # never adds them to the exact host allowlist. They cannot introduce a
         # local primitive or bypass server membership authority.

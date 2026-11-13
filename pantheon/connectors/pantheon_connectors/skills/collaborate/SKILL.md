@@ -197,6 +197,8 @@ needed later, continue paging or start a fresh snapshot without a cursor.
 
 ## Share the complete deliverable before completion
 
+Write the deliverable for the human: lead with the answer or recommendation, then include only the core details needed to satisfy the objective, essential caveats and next steps. Use clear Markdown headings, short paragraphs, and concise lists or tables when useful. Keep research logs, exhaustive observations, protocol details and repeated evidence in the chat history or supporting evidence, not the final report. Complete means sufficient to meet the objective, not a transcript of the work. Publish one coherent corrected report rather than making the human assemble earlier drafts and errata. Review readability and objective coverage before confirming.
+
 Decide whether the outcome needs a separate deliverable; a self-contained answer
 or decision needs no extra artifact. Record the choice in the definition/evidence.
 If in doubt, post the complete authorized deliverable in Pantheon so the human can

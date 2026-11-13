@@ -147,7 +147,8 @@ class DefaultDaemonOwner(Owner):
         if config['binding']['profile'] != 'default':
             raise Blocked('Default daemon profile changed')
         actual = discover(config['codex_executable'], pathlib.Path(config['codex_home']))
-        if actual.get('runtime_version') != config['binding']['version']:
+        version = config.get('daemon_endpoint', {}).get('runtime_version', config['binding']['version'])
+        if actual.get('runtime_version') != version:
             raise Blocked('Native runtime changed since preparation; review before rebinding')
         # Older exact-version preparations have no runtime_version in their pin.
         pinned = dict(config.get('daemon_endpoint', {}))
@@ -171,7 +172,7 @@ class DefaultDaemonOwner(Owner):
 
     def verify_socket(self):
         pin = validate_endpoint(pathlib.Path(self.config['codex_home']), self.config['daemon_endpoint']['alias'])
-        pin['runtime_version'] = self.config['binding']['version']
+        pin['runtime_version'] = self.config['daemon_endpoint'].get('runtime_version', self.config['binding']['version'])
         if 'runtime_version' not in self.config['daemon_endpoint']:
             pin.pop('runtime_version')
         if (pin != self.config['daemon_endpoint'] or pin['target'] != self.config['app_server_socket']
@@ -186,7 +187,8 @@ def owner_for(config):
 def recover_endpoint(setup_file, thread):
     """Refresh a restarted official socket only after checking the same live owner.
 
-    Runtime version, home, conversation, provider/account and consent stay fixed.
+    Membership, home, conversation, provider/account and consent stay fixed.
+    A capable managed runtime may change independently of the wire binding.
     This is never used by ordinary polling or to start/resume a native thread.
     """
     from .state import load_private, save_private
@@ -197,9 +199,8 @@ def recover_endpoint(setup_file, thread):
     if selected(config) != DEFAULT_DAEMON or not trial_allowed(config):
         return
     actual = dict(discover(config['codex_executable'], pathlib.Path(config['codex_home'])))
-    if actual.get('runtime_version') != config['binding']['version']:
-        raise Blocked('Native runtime changed; review this connection before resuming')
-    if 'runtime_version' not in config.get('daemon_endpoint', {}):
+    if ('runtime_version' not in config.get('daemon_endpoint', {})
+            and actual.get('runtime_version') == config['binding']['version']):
         actual.pop('runtime_version')
     if actual == config.get('daemon_endpoint'):
         return

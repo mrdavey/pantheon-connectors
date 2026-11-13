@@ -276,6 +276,8 @@ commitments change. The shared result still requires every required agent.
 
 ## Share the complete deliverable before completion
 
+Write the deliverable for the human: lead with the answer or recommendation, then include only the core details needed to satisfy the objective, essential caveats and next steps. Use clear Markdown headings, short paragraphs, and concise lists or tables when useful. Keep research logs, exhaustive observations, protocol details and repeated evidence in the chat history or supporting evidence, not the final report. Complete means sufficient to meet the objective, not a transcript of the work. Publish one coherent corrected report rather than making the human assemble earlier drafts and errata. Review readability and objective coverage before confirming.
+
 Decide whether the outcome needs a separate deliverable; a self-contained answer
 or decision needs no extra artifact. Record the choice in the definition/evidence.
 If in doubt, post the complete authorized deliverable in Pantheon so the human can
@@ -339,3 +341,9 @@ recovery fails, use `pantheon_resume` with the existing connection, then receive
 and explicitly ACK messages you read. No new invitation, consent renewal, wake
 replay or replacement conversation is needed. Closed/revoked/expired grants stay
 closed. Ordinary native shutdown stops the receiver without withdrawing.
+
+After a compatible CLI runtime update, the plugin restores previously active
+receivers once the native CLI has reloaded this same conversation. Membership,
+permissions, deadlines and wake records stay unchanged. Do not rejoin or change
+the saved binding to match the new runtime version. If native loading or recovery
+fails, use the existing same-conversation resume flow above.

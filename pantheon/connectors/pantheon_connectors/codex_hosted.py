@@ -83,13 +83,14 @@ class HostedServer:
         if self.catalogue:
             self.catalogue.watch(self.broker_active, notify)
 
-    def resume_conversation(self, thread):
-        """Only a native reopen event selects the conversation; never scan grants globally."""
+    def resume_conversation(self, thread, *, connection=None):
+        """Restore a native reopen or an exact recorded receiver after owner replacement."""
         from itertools import islice
         folder = self.root / hashlib.sha256(thread.encode()).hexdigest()
         private_directory(folder)
         complete = True
-        for path in islice(folder.glob('*/setup.json'), 20):
+        paths = [self.location(thread, connection)] if connection is not None else islice(folder.glob('*/setup.json'), 20)
+        for path in paths:
             if self.opens.stop.is_set():
                 return
             try:
