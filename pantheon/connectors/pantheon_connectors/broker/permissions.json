@@ -235,6 +235,45 @@
       "type": "object"
     }
   },
+  "pantheon_checkpoint": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    },
+    "mutating": false,
+    "name": "pantheon_checkpoint",
+    "operation": "checkpoint",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "connection": {
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection"
+      ],
+      "type": "object"
+    }
+  },
   "pantheon_command": {
     "authority": "chat.member",
     "contract": "1",
@@ -282,7 +321,7 @@
         },
         "usage": {
           "additionalProperties": false,
-          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If complete counters or attribution are unavailable, omit usage and explicitly say Token usage unavailable with a reason in text. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If counters or attribution are unavailable, omit usage. The connector records structured availability separately; keep report text focused on the work. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
           "properties": {
             "input_tokens": {
               "maximum": 1000000000000,
@@ -370,7 +409,7 @@
         },
         "usage": {
           "additionalProperties": false,
-          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If complete counters or attribution are unavailable, omit usage and explicitly say Token usage unavailable with a reason in text. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If counters or attribution are unavailable, omit usage. The connector records structured availability separately; keep report text focused on the work. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
           "properties": {
             "input_tokens": {
               "maximum": 1000000000000,
@@ -386,6 +425,42 @@
           "required": [
             "input_tokens",
             "output_tokens"
+          ],
+          "type": "object"
+        },
+        "usage_status": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "complete",
+                "partial",
+                "unavailable"
+              ],
+              "type": "string"
+            },
+            "reason": {
+              "enum": [
+                "available",
+                "runtime_unavailable",
+                "attribution_unavailable",
+                "partial_counters",
+                "counter_reset"
+              ],
+              "type": "string"
+            },
+            "source": {
+              "enum": [
+                "host",
+                "model"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "availability",
+            "reason",
+            "source"
           ],
           "type": "object"
         }
@@ -618,6 +693,81 @@
       "type": "object"
     }
   },
+  "pantheon_opening": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint": {
+          "type": "string"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "episode": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "key",
+        "text",
+        "episode",
+        "checkpoint"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_opening",
+    "operation": "opening",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint": {
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "episode": {
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "connection",
+        "key",
+        "text",
+        "episode",
+        "checkpoint",
+        "epoch",
+        "config"
+      ],
+      "type": "object"
+    }
+  },
   "pantheon_post": {
     "authority": "chat.member",
     "contract": "1",
@@ -794,6 +944,159 @@
       },
       "required": [
         "connection"
+      ],
+      "type": "object"
+    }
+  },
+  "pantheon_report": {
+    "authority": "chat.member",
+    "contract": "1",
+    "execution": "remote",
+    "inputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint": {
+          "type": "string"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "key": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "usage": {
+          "additionalProperties": false,
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If counters or attribution are unavailable, omit usage. The connector records structured availability separately; keep report text focused on the work. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "properties": {
+            "input_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "output_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "connection",
+        "key",
+        "target",
+        "text",
+        "checkpoint"
+      ],
+      "type": "object"
+    },
+    "mutating": true,
+    "name": "pantheon_report",
+    "operation": "report",
+    "primitive": "",
+    "wireInputSchema": {
+      "additionalProperties": false,
+      "properties": {
+        "checkpoint": {
+          "type": "string"
+        },
+        "config": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "connection": {
+          "type": "string"
+        },
+        "epoch": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "key": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "usage": {
+          "additionalProperties": false,
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If counters or attribution are unavailable, omit usage. The connector records structured availability separately; keep report text focused on the work. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "properties": {
+            "input_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "output_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens"
+          ],
+          "type": "object"
+        },
+        "usage_status": {
+          "additionalProperties": false,
+          "properties": {
+            "availability": {
+              "enum": [
+                "complete",
+                "partial",
+                "unavailable"
+              ],
+              "type": "string"
+            },
+            "reason": {
+              "enum": [
+                "available",
+                "runtime_unavailable",
+                "attribution_unavailable",
+                "partial_counters",
+                "counter_reset"
+              ],
+              "type": "string"
+            },
+            "source": {
+              "enum": [
+                "host",
+                "model"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "availability",
+            "reason",
+            "source"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "connection",
+        "key",
+        "target",
+        "text",
+        "checkpoint",
+        "epoch",
+        "config"
       ],
       "type": "object"
     }

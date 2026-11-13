@@ -14,6 +14,7 @@ from .version import CODEX_VERSION
 from .codex_daemon import native_identity
 from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, NATIVE_SETUP, descriptor, selected
 from .codex_mcp import Server, WAKE_TOOLS, RESUME_TOOL
+from .codex_questions import QUESTION_TOOL
 from .codex_setup import prepare, cli_compatibility
 from .codex_compatibility import require_capabilities
 from .hosted_discovery import TRUSTED_ORIGIN, fetch_discovery, validate_hosted_admission
@@ -136,7 +137,7 @@ class HostedServer:
             tools=[{**tool,'inputSchema':dict(type='object',properties={'connection':{'type':'string'}},required=['connection'],additionalProperties=False)} if tool['name']=='pantheon_doctor' else tool for tool in (self.catalogue.tools() if self.catalogue else TOOLS)]
             setup = [codex_setup_policy.TOOL] if self.setup_enabled else [PREPARE, AUTHORIZE]
             connector = codex_setup_policy.CONNECT_TOOL if self.setup_enabled else connect.TOOL
-            return {'tools':[connector, RESUME_TOOL]+setup+tools+WAKE_TOOLS}
+            return {'tools':[connector, RESUME_TOOL, QUESTION_TOOL]+setup+tools+WAKE_TOOLS}
         if method != 'tools/call': raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
         name,args=params.get('name'),params.get('arguments',{})
@@ -145,9 +146,10 @@ class HostedServer:
         if not metadata or metadata.get('version')!=3 or metadata.get('service_origin')!=TRUSTED_ORIGIN: raise Blocked('Portable package trust configuration is missing')
         if self.setup_enabled:
             if name == 'pantheon_setup':
-                if ('action' not in args or set(args) - {'action', 'expires_at'}
+                if ('action' not in args or set(args) - {'action', 'expires_at', 'client'}
                         or args['action'] not in ('status', 'review', 'revoke', 'change')
-                        or ('expires_at' in args and args['action'] not in ('review', 'change'))):
+                        or (('expires_at' in args or 'client' in args) and args['action'] not in ('review', 'change'))
+                        or ('client' in args and args['client'] not in ('cli', 'desktop'))):
                     raise Blocked('Use setup status, review, change or revoke; model approval arguments are not accepted')
                 if 'expires_at' in args:
                     codex_setup_policy.validate_deadline(args['expires_at'])
@@ -155,7 +157,7 @@ class HostedServer:
                     return self.result(self.setup_status(thread))
                 if args['action'] == 'revoke':
                     return self.result(self.setup_policy.revoke())
-                return self.result(self.review_setup(thread, change=args['action'] == 'change', expires_at=args.get('expires_at')))
+                return self.result(self.review_setup(thread, change=args['action'] == 'change', expires_at=args.get('expires_at'), client=args.get('client')))
             if name in ('pantheon_prepare', 'pantheon_authorize') and not _setup_connect:
                 raise Blocked('Use pantheon_connect; this package derives fresh grants only from native setup review')
         if 'link' in args:
@@ -375,14 +377,14 @@ class HostedServer:
                 result['content'] = [{'type': 'text', 'text': json.dumps(result['structuredContent'])}]
             return result
 
-    def review_setup(self, thread, *, change=False, expires_at=None):
+    def review_setup(self, thread, *, change=False, expires_at=None, client=None):
         def inspect(path, delivery=DEFAULT_DAEMON):
             prepare(path, TRUSTED_ORIGIN, 'default', delivery=delivery,
                     native_thread=thread, inspect_default_daemon=delivery == DEFAULT_DAEMON)
             return load_private(path)
         choose_host = (descriptor() or {}).get('delivery') == NATIVE_SETUP
         result = self.setup_policy.review(thread, self.elicit, inspect, change=change, expires_at=expires_at,
-                                         choose_host=choose_host)
+                                         choose_host=choose_host, client=client)
         if result['status'] == 'setup_active':
             return {**result, **self.setup_status(thread)}
         if result.get('reason') != 'native_form_declined':

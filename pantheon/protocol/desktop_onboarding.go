@@ -32,3 +32,6 @@ var HostedOnboardingV3Resume []byte
 //
 //go:embed hosted-onboarding-v3-client-setup.md
 var HostedOnboardingV3ClientSetup []byte
+
+//go:embed hosted-onboarding-v3-setup-reuse.md
+var HostedOnboardingV3SetupReuse []byte

@@ -29,7 +29,8 @@ TOOL = {'name': 'pantheon_setup', 'description':
     'Review Pantheon setup once using the native human form. Reuse active setup for deliberate human invitations; status is read-only, revoke stops derived runtime grants. Model arguments never approve permissions.',
     'inputSchema': {'type': 'object', 'properties': {'action': {'type': 'string',
         'enum': ['review', 'status', 'revoke', 'change']},
-        'expires_at': {'type': 'number', 'description': 'Optional original human deadline limiting a new review and all its derived grants; never permission or renewal.'}},
+        'expires_at': {'type': 'number', 'description': 'Optional original human deadline limiting a new review and all its derived grants; never permission or renewal.'},
+        'client': {'type': 'string', 'enum': ['cli', 'desktop'], 'description': 'Previously identified client for review/change only. Routing hint, not permission; native acceptance and runtime binding remain required.'}},
         'required': ['action'], 'additionalProperties': False}}
 CONNECT_TOOL = {'name': 'pantheon_connect', 'description':
     'Connect the exact invitation deliberately supplied by the human. First use opens the native setup form and requires normal same-conversation reload before joining; '
@@ -49,8 +50,6 @@ DAEMON_DESCRIPTION = ('CLI: allow broader local Codex access, used only for invi
 DESKTOP_DESCRIPTION = ('Desktop: automated notifications appear as messages and may still arrive after you revoke access. '
     'Pantheon cannot verify your billing account.')
 FORM = {'type': 'object', 'properties': {
-    'collaboration': {'type': 'boolean', 'title': 'Allow Pantheon collaboration', 'default': True,
-        'description': COLLABORATION_DESCRIPTION + '\n\n' + DAEMON_DESCRIPTION},
     # Codex CLI 0.162.1 rejects the entire form when any field is numeric.
     # Its supported single-select string enum preserves a real native choice.
     'minutes': {'type': 'string', 'title': 'Time limit',
@@ -63,7 +62,7 @@ FORM = {'type': 'object', 'properties': {
     'sites': {'type': 'boolean', 'title': 'Public website publishing (optional)', 'default': True,
         'description': 'Publish public websites from this folder when your task and chat allow it. Sites may stay online after the chat ends.'},
     'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
-}, 'required': ['collaboration', 'minutes', 'transfers', 'sites']}
+}, 'required': ['minutes', 'transfers', 'sites']}
 MESSAGE = ('Your choices are saved for future invitations. '
            'Ask to change Pantheon setup or revoke access anytime.')
 
@@ -73,8 +72,6 @@ GUI_FORM = copy.deepcopy(FORM)
 GUI_FORM['properties'] = {'host': {'type': 'string', 'title': 'Where are you using Codex?',
     'enum': ['cli', 'desktop'], 'enumNames': ['CLI', 'Desktop']}, **GUI_FORM['properties']}
 GUI_FORM['required'] = ['host', *FORM['required']]
-GUI_FORM['properties']['collaboration']['description'] = (
-    COLLABORATION_DESCRIPTION + '\n\n' + DAEMON_DESCRIPTION + '\n\n' + DESKTOP_DESCRIPTION)
 
 
 def validate_connect(args):
@@ -104,15 +101,19 @@ def choices(response, now, form=FORM, *, defaults=None, creatable=()):
     if not isinstance(response, dict) or response.get('action') != 'accept':
         return None
     value = response.get('content')
-    if (not isinstance(value, dict) or set(value) - set(form['properties'])
+    if (not isinstance(value, dict) or set(value) - (set(form['properties']) | {'collaboration'})
             or not set(form['required']) <= set(value)
-            or any(type(value.get(k)) is not bool for k in ('collaboration', 'transfers', 'sites'))
+            or any(type(value.get(k)) is not bool for k in ('transfers', 'sites'))
             or type(value['minutes']) is not str or value['minutes'] not in FORM['properties']['minutes']['enum']):
         raise Blocked('The native setup response is incomplete; no permissions were saved')
     if 'host' in form['properties'] and value['host'] not in ('cli', 'desktop'):
         raise Blocked('Select the current native client; no automatic fallback is permitted')
-    if not value['collaboration']:
-        return None
+    # Accept old in-flight forms without turning an explicit opt-out into consent.
+    if 'collaboration' in value:
+        if type(value['collaboration']) is not bool:
+            raise Blocked('Invalid collaboration choice; no permissions were saved')
+        if not value['collaboration']:
+            return None
     minutes = int(value['minutes'])
     # Saving setup is part of the disclosed native acceptance, not a separate
     # choice. Retain the stored field so prior conversation-only consent is never
@@ -162,21 +163,41 @@ class Policy:
 
     def status(self, thread):
         value = self.read()
-        return {'status': 'setup_active' if self.active(value, thread) else 'setup_required',
+        active = self.active(value, thread)
+        reason = ('missing' if not value else 'revoked' if not value.get('active') else
+                  'expired' if value.get('expires_at') and value['expires_at'] <= time.time() else
+                  'conversation_restricted' if not active else '')
+        return {'status': 'setup_active' if active else 'setup_required',
+                'reason': reason, 'policy_version': CONTRACT,
+                **({'client': 'desktop' if value.get('delivery') == GUI_QUEUE else 'cli',
+                    'delivery': value.get('delivery', DEFAULT_DAEMON)} if value else {}),
                 'runtime_started': False, 'preference_is_not_a_chat_grant': True,
                 **({k: value[k] for k in ('remember', 'expires_at', 'transfers', 'sites', 'folders')} if value else {})}
 
-    def review(self, thread, elicit, inspect, *, change=False, expires_at=None, choose_host=False):
+    def review(self, thread, elicit, inspect, *, change=False, expires_at=None, choose_host=False, client=None):
+        if client not in (None, 'cli', 'desktop') or (client == 'desktop' and not choose_host):
+            raise Blocked('Unsupported setup client')
         if expires_at is not None:
             validate_deadline(expires_at)
         if not change and self.active(self.read(), thread):
-            return self.status(thread)
+            status = self.status(thread)
+            if client is not None and client != status['client']:
+                raise Blocked('Saved client differs; use setup change for native review of this transport')
+            return status
         # Nothing sensitive is inspected and no native policy is changed before
         # the real client's correlated acceptance response.
         message = ('Changing setup stops access to existing chats. ' if change else '') + MESSAGE
         managed = default_folders(self.home / 'pantheon')
         defaults = dict(managed)
-        form = copy.deepcopy(GUI_FORM if choose_host else FORM)
+        previous = self.read()
+        selected_client = client or (('desktop' if previous.get('delivery') == GUI_QUEUE else 'cli') if previous else None)
+        form = copy.deepcopy(GUI_FORM if choose_host and selected_client is None else FORM)
+        if selected_client:
+            disclosure = DESKTOP_DESCRIPTION if selected_client == 'desktop' else DAEMON_DESCRIPTION
+            message = 'Client: ' + ('Desktop' if selected_client == 'desktop' else 'CLI') + '. ' + message
+        else:
+            disclosure = DAEMON_DESCRIPTION + ('\n\n' + DESKTOP_DESCRIPTION if choose_host else '')
+        message = COLLABORATION_DESCRIPTION + '\n\n' + disclosure + '\n\n' + message
         if expires_at is not None:
             form['properties']['minutes']['description'] += (
                 '\nMaximum deadline: ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(expires_at))
@@ -207,6 +228,8 @@ class Policy:
                 reason = 'native_form_unanswered'
             return {'status': 'setup_declined', 'reason': reason,
                     'runtime_started': False, 'membership_started': False}
+        if selected_client:
+            selected['delivery'] = GUI_QUEUE if selected_client == 'desktop' else DEFAULT_DAEMON
         if expires_at is not None:
             validate_deadline(expires_at)
             selected['expires_at'] = min(selected['expires_at'] or expires_at, expires_at)

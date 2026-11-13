@@ -22,6 +22,7 @@ from .codex_setup import prepare
 from .codex_output_watch import run
 from .native_cli import execute, binding_for
 from .onboarding import TOOLS
+from .codex_questions import QUESTION_TOOL
 from .state import load_private
 from .worker import Blocked
 
@@ -154,7 +155,7 @@ class Server:
         if method == 'ping':
             return {}
         if method == 'tools/list':
-            return {'tools': [PREPARE, RESUME_TOOL] + TOOLS + WAKE_TOOLS}
+            return {'tools': [PREPARE, RESUME_TOOL, QUESTION_TOOL] + TOOLS + WAKE_TOOLS}
         if method != 'tools/call':
             raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))

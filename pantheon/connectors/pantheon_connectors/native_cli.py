@@ -86,6 +86,21 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             return Notices(current).closure_allows(current.get('invitation_connection'))
         return True
     binding = binding_for(config, native_thread)
+    def with_questions(value, connection, view=None):
+        # A resume/begin reminder does not re-prompt or copy private content.
+        from .codex_questions import question, cancel_all
+        current = current_scope()
+        reminders = Onboarding(current)
+        reminders.allowance_check = allowance
+        if view is None:
+            _, _, client = reminders.member(connection, binding)
+            view = client.request('/v1/chat')
+        reminders.require_allowance()
+        if view.get('chat', {}).get('state') not in ('waiting', 'active'):
+            cancel_all(current, connection)
+            return value
+        markers = question(current, connection, current_context=view['chat'])
+        return {**value, 'pending_questions': markers['pending']}
     from .broker.codex_setup_policy import require_tool
     file_boundary = require_tool(config, name, args)
     if name in ('pantheon_begin_wake', 'pantheon_finish_wake') and binding['surface'] == 'app-server-tool-output':
@@ -97,7 +112,8 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
                 args['connection'], args['wake_id'], native_thread=native_thread,
                 scope_check=current_scope)
         preflight(config, binding)
-        return OutputNotices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake', native_thread=native_thread)
+        value = OutputNotices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake', native_thread=native_thread)
+        return with_questions(value, args['connection']) if name == 'pantheon_begin_wake' else value
     if name == 'pantheon_wait_for_unread' and binding['surface'] == 'native-queue':
         from .codex_wait import wait_for_unread
         return wait_for_unread(config, binding, args)
@@ -108,7 +124,8 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
             raise Blocked('Expected connection and wake_id from the Pantheon notice')
         if name == 'pantheon_finish_wake' and selected(config) == GUI_QUEUE and not allowance():
             return Notices(config).fenced_wake_status(args['connection'], args['wake_id'], scope_check=current_scope)
-        return Notices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake')
+        value = Notices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake')
+        return with_questions(value, args['connection']) if name == 'pantheon_begin_wake' else value
     if name == 'pantheon_pair_panel' and binding['surface'] == 'native-queue':
         require_queue(config)
         from .codex_queue import Notices
@@ -149,6 +166,20 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
                 "notice": "No turn requested. The owner must approve the bounded trial and start its receiver."}
     service = Onboarding(config)
     service.allowance_check = allowance
+    if name == 'pantheon_question':
+        from .codex_questions import question, QUESTION_TOOL
+        if (not isinstance(args, dict) or not isinstance(args.get('connection'), str)
+                or set(args) - set(QUESTION_TOOL['inputSchema']['properties'])):
+            raise Blocked('Invalid native question arguments')
+        check(binding)
+        _, _, client = service.member(args['connection'], binding)
+        view = client.request('/v1/chat')
+        service.require_allowance()
+        if view.get('chat', {}).get('state') not in ('waiting', 'active'):
+            from .codex_questions import cancel_all
+            cancel_all(config, args['connection'])
+            raise Blocked('Question belongs to an ended chat')
+        return question(config, **args, current_context=view['chat'])
     if name == 'pantheon_resume':
         if not isinstance(args, dict) or set(args) != {'connection'}:
             raise Blocked('Resume requires one existing connection')
@@ -158,10 +189,12 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         service.require_allowance()
         state = view.get('chat', {}).get('state')
         if state not in ('waiting', 'active'):
+            from .codex_questions import cancel_all
+            cancel_all(config, args['connection'])
             raise Blocked('Existing Pantheon chat is no longer open')
-        return dict(connection=args['connection'], status='resume_validated',
+        return with_questions(dict(connection=args['connection'], status='resume_validated',
                     chat_state=state, delivery_verified=False,
-                    next='Receive pending messages, read and explicitly ACK them. Preserve existing wake receipts; do not redeem or renew consent.')
+                    next='Receive pending messages, read and explicitly ACK them. Preserve existing wake receipts; do not redeem or renew consent.'), args['connection'], view)
     # Withdrawing an existing membership needs its authenticated binding, but
     # must remain possible after the trial or its queue executable stops working.
     withdrawing = (binding['surface'] in ('native-queue', 'app-server-tool-output') and name == 'pantheon_command'
@@ -172,6 +205,8 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         from .codex_queue import Notices
         validate_arguments(name, args)
         service.member(args['connection'], binding, allow_expired=True)
+        from .codex_questions import cancel_all
+        cancel_all(config, args['connection'])
         if selected(config) == ACTIVE_WAIT:
             return dispatch(service, name, args, binding, check, doctor)
         if binding['surface'] == 'app-server-tool-output':

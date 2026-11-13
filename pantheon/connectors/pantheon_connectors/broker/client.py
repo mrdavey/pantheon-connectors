@@ -4,6 +4,7 @@ The membership secret never reaches /mcp. Delivery and binary primitives retain
 their independently qualified transports. A transport error never causes fallback.
 """
 import copy
+from contextlib import ExitStack
 import hashlib
 import json
 import secrets
@@ -149,8 +150,20 @@ class BrokerClient(Client):
         identity = hashlib.sha256(key.encode()).hexdigest()
         path = directory / (identity + '.json')
         intent = {'scope': self.scope, 'tool': name, 'contract': descriptor['contract'], 'arguments': arguments}
-        with private_lock(directory / (identity + '.lock')):
+        reporting = name == 'pantheon_report' or name == 'pantheon_command' and arguments.get('op') == 'report'
+        with ExitStack() as locks:
+            if reporting:
+                locks.enter_context(private_lock(directory / 'reports.lock'))
+            locks.enter_context(private_lock(directory / (identity + '.lock')))
             self.allowance()
+            if reporting and not path.exists():
+                for previous in directory.glob('*.json'):
+                    record = load_private(previous)
+                    original = record.get('intent', {})
+                    if (record.get('status') == 'pending' and original.get('scope') == self.scope and
+                            (original.get('tool') == 'pantheon_report' or
+                             original.get('tool') == 'pantheon_command' and original.get('arguments', {}).get('op') == 'report')):
+                        raise Blocked('A previous report has an uncertain outcome; retry its original key and payload before a new report')
             if path.exists() or path.is_symlink():
                 saved = load_private(path)
                 if saved['intent'] != intent:
@@ -165,7 +178,19 @@ class BrokerClient(Client):
                         if view.get('completion_protocol') != COMPLETION_PROTOCOL:
                             raise APIError(409, 'completion_protocol_unavailable')
                         payload['completion_protocol'] = COMPLETION_PROTOCOL
+                lineage = None
+                if reporting and \
+                        'usage_status' in descriptor['wireInputSchema']['properties'] and self.config.get('binding', {}).get('runtime') == 'codex':
+                    if 'usage' in payload:
+                        # Explicit model totals are a separate lineage, never a
+                        # baseline to combine with a smaller host-measured subset.
+                        payload['usage_status'] = {'availability': 'partial', 'reason': 'partial_counters', 'source': 'model'}
+                    else:
+                        measured, lineage = self._report_accounting(directory)
+                        payload.update(measured)
                 saved = {'intent': intent, 'wire': payload, 'status': 'pending'}
+                if lineage:
+                    saved['accounting_lineage'] = lineage
                 save_private(path, saved)  # Before the first mutating request.
             if before_send:
                 before_send(payload)
@@ -174,6 +199,36 @@ class BrokerClient(Client):
             # outcome. Do not replay a stale private success after revocation.
             save_private(path, {**saved, 'status': 'confirmed'})
             return value
+
+    def _report_accounting(self, directory):
+        from ..codex_accounting import snapshot
+        unavailable = {'usage_status': {'availability': 'unavailable', 'reason': 'attribution_unavailable', 'source': 'host'}}
+        try:
+            measured = snapshot(getattr(self, 'accounting_config', self.config), self.local_connection)
+            lineage = measured.pop('_lineage', None)
+            if 'usage' not in measured:
+                return measured, None
+            if not isinstance(lineage, str) or not lineage:
+                return unavailable, None
+            for previous in directory.glob('*.json'):
+                record = load_private(previous)
+                if record.get('intent', {}).get('scope') != self.scope:
+                    continue
+                wire = record.get('wire', {})
+                usage = wire.get('usage')
+                if not isinstance(usage, dict):
+                    continue
+                # A pending outcome may have committed remotely. Never erase its
+                # high-water evidence or infer continuity from matching numbers.
+                if (wire.get('usage_status', {}).get('source') != 'host'
+                        or record.get('accounting_lineage') != lineage):
+                    return unavailable, None
+                if any(measured['usage'][k] < usage[k] for k in ('input_tokens', 'output_tokens')):
+                    return {'usage_status': {'availability': 'unavailable', 'reason': 'counter_reset', 'source': 'host'}}, None
+            return measured, lineage
+        except (OSError, ValueError, TypeError, KeyError):
+            # Optional accounting damage must not suppress an authorized report.
+            return unavailable, None
 
     def command(self, op, *, key=None, before_send=None, **fields):
         if op not in REMOTE_COMMANDS:

@@ -27,7 +27,7 @@ TOOLS = {'pantheon_authorize', 'pantheon_prepare', 'pantheon_preview', 'pantheon
          'pantheon_receive', 'pantheon_ack', 'pantheon_post', 'pantheon_command',
          'pantheon_begin_wake', 'pantheon_finish_wake', 'pantheon_site_deploy', 'pantheon_site_status', 'unknown'}
 TOOLS |= {'pantheon_transfer_send', 'pantheon_transfer_inspect', 'pantheon_transfer_fetch', 'pantheon_transfer_ack'}
-TOOLS.add('pantheon_resume')
+TOOLS.update(('pantheon_resume', 'pantheon_question', 'pantheon_checkpoint', 'pantheon_report', 'pantheon_opening'))
 STATES = {'idle', 'active', 'outstanding', 'accepted_not_received', 'stopped', 'unknown', 'transport_retry', 'delivery_uncertain'}
 REASONS = {'guard_failed', 'api_error', 'transport_error', 'state_error', 'unexpected',
            'expired', 'scope_changed', 'identity_mismatch', 'endpoint_changed',

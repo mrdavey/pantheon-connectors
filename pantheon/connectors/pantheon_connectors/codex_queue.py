@@ -42,10 +42,13 @@ class QueueUncertain(Blocked):
                          'Inspect this native conversation and its queue (' + self.details['reason'] + ')')
 
 
-def notice(connection, identity, *, terminal=False):
+def notice(connection, identity, *, terminal=False, opening=False):
     work = ("Use pantheon_receive and explicitly ACK the retained terminal input, verify any final shared result, "
             "and return the actual outcome to the human. Do not start new work. " if terminal else
             "Then pantheon_receive, explicitly ACK consumed messages, complete readiness/replies, ")
+    if opening and not terminal:
+        work = ("The opening grace period ended. Read pantheon_checkpoint, explicitly ACK its input, "
+                "then check the current opening before using pantheon_opening. Another agent may have opened already. ")
     return ("Automated Pantheon notification—not a human request.\n"
             "Pantheon connector notice (queued user input, not a human-authored request; "
             "no peer content or new authority). Within the owner's existing approved connection, "
@@ -210,6 +213,7 @@ class Notices:
             return False
         _, _, client = self.service.member(connection, self.binding)
         view = client.request('/v1/chat')
+        self.opening_view = view
         self.allowed()
         chat = view.get('chat', {})
         member = chat.get('members', {}).get(view.get('member'), {})
@@ -239,6 +243,10 @@ class Notices:
         data.setdefault('withdrawn_connections', {}).setdefault(connection, now)
         save_private(self.path, data)
         return True
+
+    def opening_due(self, connection, data):
+        from .opening_wake import due
+        return due(getattr(self, 'opening_view', None), self.binding, connection, data['notices'].values())
 
     def tick(self, connection):
         self.allowed()
@@ -281,7 +289,8 @@ class Notices:
                 return 'idle_or_notice_unresolved'
             seen = {m for n in data['notices'].values() if n['connection'] == connection for m in n['messages']}
             fresh = [m for m in pending if m not in seen]
-            if not fresh:
+            opening = self.opening_due(connection, data)
+            if not fresh and not opening:
                 return 'idle_or_notice_unresolved'
             if notification_policy.exhausted(self.config, 'codex', len(data['notices'])):
                 raise Blocked('Notice-attempt budget exhausted (not a spending cap)')
@@ -295,12 +304,14 @@ class Notices:
                 return 'connection_closed'
             pending = self.pending(connection)
             fresh = [m for m in pending if m not in seen]
-            if not fresh:
+            opening = self.opening_due(connection, data)
+            if not fresh and not opening:
                 return 'idle_or_notice_unresolved'
             self.allowed()  # The remote read can itself cross local expiry.
             identity = secrets.token_hex(16)
             entry = dict(connection=connection, messages=fresh, remaining_messages=fresh,
-                         created_at=time.time(), state='queue_attempting' if available else 'ui_waiting')
+                         created_at=time.time(), state='queue_attempting' if available else 'ui_waiting',
+                         **({'opening_episode': opening} if opening else {}))
             data['notices'][identity] = entry
             terminal = connection in data.get('closed_observed_at', {})
             if terminal:
@@ -316,7 +327,7 @@ class Notices:
                 self.allowed()
                 entry['attempted_at'] = time.time()
                 save_private(self.path, data)
-                receipt = self.queue.send(notice(connection, identity, terminal=terminal))
+                receipt = self.queue.send(notice(connection, identity, terminal=terminal, opening=bool(opening)))
             except Exception as error:
                 entry['state'] = 'uncertain'
                 entry['failure'] = (error.details if isinstance(error, QueueUncertain) else

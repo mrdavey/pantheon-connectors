@@ -52,6 +52,13 @@ class AppServer:
                 continue
             if event.get("params", {}).get("threadId") not in (None, self.thread):
                 continue
+            observer = getattr(self, "usage_observer", None)
+            if observer is not None:
+                try:
+                    observer(event)
+                except Exception:
+                    # Accounting gaps never stop delivery or expose event payloads.
+                    pass
             if event["method"] == "turn/completed":
                 self.busy = False
             elif event["method"] == "turn/started":

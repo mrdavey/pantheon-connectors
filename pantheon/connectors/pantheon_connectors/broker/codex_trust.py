@@ -15,7 +15,8 @@ SERVER = ('plugins', 'pantheon@pantheon-hosted', 'mcp_servers', 'pantheon')
 ROUTINE = ('pantheon_connect', 'pantheon_preview', 'pantheon_doctor', 'pantheon_receive',
            'pantheon_ack', 'pantheon_post', 'pantheon_command', 'pantheon_chat',
            'pantheon_message', 'pantheon_history', 'pantheon_receipts', 'pantheon_members',
-           'pantheon_context', 'pantheon_chat_state', 'pantheon_begin_wake', 'pantheon_finish_wake')
+           'pantheon_context', 'pantheon_chat_state', 'pantheon_begin_wake', 'pantheon_finish_wake',
+           'pantheon_checkpoint', 'pantheon_report', 'pantheon_opening', 'pantheon_question')
 TRANSFERS = ('pantheon_transfer_send', 'pantheon_transfer_fetch', 'pantheon_transfer_ack', 'pantheon_transfer_inspect')
 SITES = ('pantheon_site_deploy', 'pantheon_site_status')
 

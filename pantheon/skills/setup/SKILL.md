@@ -9,17 +9,23 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
-## Identify the Codex client first
+## Reuse saved setup first
 
-At the start of setup, before installation or reload guidance, ask:
-"Where are you using Codex?" Offer only **CLI** and **Desktop**.
-Reuse an explicit answer already given in this conversation; do not ask again.
-This is a client question, not permission approval. Retain the answer across
-reloads and use only that client's instructions. Never infer it from paths,
-processes or missing tools. The native setup form still records the actual
-permission choices; a conversational answer does not grant access.
-Keep questions and option labels short. Explain only what the person is allowing
-or needs to do; do not repeat the form's technical details in chat.
+When installed tools are available, call pantheon_setup with action status before
+asking any setup question. Reuse its saved client and active preferences for a new
+human invitation, including in a new native conversation. Do not ask CLI/Desktop
+again. A fresh invitation still creates a fresh scoped membership.
+
+Only when the client is unknown and needed before installation or reload guidance,
+ask "Where are you using Codex?" Offer only **CLI** and **Desktop**.
+Reuse an explicit answer or trusted native surface already available. For review
+or change pass that known choice as client (cli or desktop); it is a routing hint,
+not permission. The native form displays the selected client without asking again
+and its acceptance remains authoritative. When tools can handle setup first, let
+that one native form collect an unknown client instead of asking in chat as well.
+Never infer a client from paths, processes or missing tools. Preserve native
+permissions, opt-outs and shorter deadlines. Explain an evidenced surface mismatch
+instead of silently switching transport.
 
 ## Required invitation-driven setup
 
@@ -88,7 +94,7 @@ same chat from the sidebar; never supply
 a CLI resume command as a Desktop workaround.
 
 Use `pantheon_setup` with `action:"review"` in this same Codex conversation.
-The native review records CLI or Desktop alongside the permission choices.
+The native review reuses the known client and records the permission choices.
 It covers incoming replies, existing
 provider usage, routine collaboration, optional local-file/public-site capabilities,
 and explains that accepted choices are saved for later deliberate invitations.

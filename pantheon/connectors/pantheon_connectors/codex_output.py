@@ -77,6 +77,8 @@ class Owner:
                    if selected(config) == DEFAULT_DAEMON else config['binding']['version'])
         self.rpc = AttachedAppServer(config['app_server_socket'], version,
                                      config['binding']['profile'], config['codex_executable'])
+        from .codex_accounting import Observer
+        self.rpc.usage_observer = Observer(config)
         try:
             self.check()
         except Exception:
@@ -169,12 +171,14 @@ class OutputNotices:
 
     def pending(self, connection):
         _, _, client = self.service.member(connection, self.binding)
-        if self.config.get('runtime_policy') == {'mode':'connection'}:
+        if self.config.get('runtime_policy') == {'mode':'connection'} or self.config.get('hosted_consent') is True:
             view = client.request('/v1/chat')
+            self.opening_view = view
             chat = view.get('chat', {})
             member = chat.get('members', {}).get(view.get('member'), {})
-            if (chat.get('state') not in ('waiting', 'active') or member.get('revoked') is not False
-                    or member.get('binding') != self.binding):
+            if (self.config.get('runtime_policy') == {'mode':'connection'} and
+                    (chat.get('state') not in ('waiting', 'active') or member.get('revoked') is not False
+                     or member.get('binding') != self.binding)):
                 raise Blocked('Connection ended, revoked or rebound; no runtime delivery')
         envelopes = client.request('/v1/pending')
         if any(e.get('protocol') != 'pyros.v1' or e.get('binding') != self.binding for e in envelopes):
@@ -214,6 +218,10 @@ class OutputNotices:
                 save_private(self.path, data)
             return True
 
+    def opening_due(self, connection, data):
+        from .opening_wake import due
+        return due(getattr(self, 'opening_view', None), self.binding, connection, data['notices'].values())
+
     def tick(self, connection):
         self.allowed()
         with notice_lock(self.lock, self.allowed):
@@ -232,7 +240,8 @@ class OutputNotices:
                 save_private(self.path, data)
                 return dict(status='outstanding', wake_id=identity, turn_id=entry.get('turn_id'))
             seen = {m for n in data['notices'].values() if n['connection']==connection for m in n['messages']}
-            if not set(pending)-seen:
+            opening = self.opening_due(connection, data)
+            if not set(pending)-seen and not opening:
                 return dict(status='idle')
             if notification_policy.exhausted(self.config, 'codex', len(data['notices'])):
                 raise Blocked('Tool-output attempt budget exhausted')
@@ -243,14 +252,17 @@ class OutputNotices:
             self.read()
             pending = self.pending(connection)  # Revocation/consumption during preflight.
             self.allowed()
-            if not set(pending)-seen:
+            opening = self.opening_due(connection, data)
+            if not set(pending)-seen and not opening:
                 return dict(status='idle')
             if notification_policy.policy(self.config, 'codex') != approved_policy:
                 raise Blocked('Notification policy changed during delivery preflight')
             identity = secrets.token_hex(16)
-            output = json.dumps(dict(connection=connection, wake_id=identity, has_unread=True), sort_keys=True)
+            output = json.dumps(dict(connection=connection, wake_id=identity, has_unread=bool(pending),
+                                     **({'reason': 'opening_deadline'} if opening else {})), sort_keys=True)
             entry = dict(connection=connection, messages=pending, state='attempting', attempted_at=time.time(),
-                         owner_state_before=before, output=output)
+                         owner_state_before=before, output=output,
+                         **({'opening_episode': opening} if opening else {}))
             data['notices'][identity] = entry
             save_private(self.path, data)  # Crash/timeout fence BEFORE any invocation.
             try:

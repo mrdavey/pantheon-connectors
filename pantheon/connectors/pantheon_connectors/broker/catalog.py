@@ -12,7 +12,7 @@ from ..worker import Blocked
 from .transport import HTTP
 
 RESERVED = {'pantheon_prepare', 'pantheon_authorize', 'pantheon_begin_wake', 'pantheon_finish_wake',
-            'pantheon_status', 'pantheon_resume', 'pantheon_disconnect', 'pantheon_setup', 'pantheon_connect'}
+            'pantheon_question', 'pantheon_status', 'pantheon_resume', 'pantheon_disconnect', 'pantheon_setup', 'pantheon_connect'}
 LOCAL = {
     'pantheon_preview': 'invitation.preview.v1', 'pantheon_join': 'invitation.join.v1',
     'pantheon_doctor': 'connection.doctor.v1', 'pantheon_receive': 'delivery.receive.v1',
