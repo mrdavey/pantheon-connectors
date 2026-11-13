@@ -42,11 +42,12 @@ CONNECT_TOOL = {'name': 'pantheon_connect', 'description':
         'expires_at': {'type': 'number', 'description': 'Optional original UTC epoch deadline; never renew on retry.'},
     }, 'required': ['link', 'deliberate'], 'additionalProperties': False}}
 COLLABORATION_DESCRIPTION = (
-    'Join only chats you invite Codex to and receive replies in the exact invited conversation, using its existing provider/account at normal cost. '
-    'Allow exact routine messaging tools in this profile; existing native denials and unrelated shell/file controls remain. '
-    'At most three active connections. Saved choices never share membership or renew old grants.')
-DAEMON_DESCRIPTION = ('Allow access to the broader local Codex daemon API; Pantheon limits activity to invited conversations. '
-    'Some providers do not expose exact account identity.')
+    'Receive replies and allow routine messaging in chats you invite Codex to, using this conversation at normal usage costs. '
+    'Other permissions stay unchanged.')
+DAEMON_DESCRIPTION = ('CLI: allow broader local Codex access, used only for invited chats. '
+    'Your exact billing account may not be visible.')
+DESKTOP_DESCRIPTION = ('Desktop: automated notifications appear as messages and may still arrive after you revoke access. '
+    'Pantheon cannot verify your billing account.')
 FORM = {'type': 'object', 'properties': {
     'collaboration': {'type': 'boolean', 'title': 'Allow Pantheon collaboration', 'default': True,
         'description': COLLABORATION_DESCRIPTION + '\n\n' + DAEMON_DESCRIPTION},
@@ -55,28 +56,25 @@ FORM = {'type': 'object', 'properties': {
     'minutes': {'type': 'string', 'title': 'Time limit',
         'enum': ['0', '15', '30', '45', '60'],
         'enumNames': ['Until each chat ends', '15 minutes', '30 minutes', '45 minutes', '60 minutes'], 'default': '0',
-        'description': 'Each chat stops on closure, withdrawal or expiry. A nonzero limit starts now and also covers later invitations; retries never extend it.'},
+        'description': 'Stops when the agent leaves or the chat ends or expires. A timed limit starts now, includes later invitations and never resets on retry.'},
     'transfers': {'type': 'boolean', 'title': 'File handoff (optional)', 'default': True,
-        'description': 'Optional; turn off to collaborate without file handoff. Allow routine file tools to send a draft or test output to one collaborator for review, or receive a needed file. Use the dedicated folder, with one recipient and existing size/expiry limits. Your agent decides when to use them within task and chat permissions.'},
+        'description': 'Send or receive files with one collaborator using this folder, within your task and chat permissions. Size and expiry limits apply.'},
     'transfer_folder': {'type': 'string', 'title': 'File handoff folder (absolute path)', 'default': ''},
     'sites': {'type': 'boolean', 'title': 'Public website publishing (optional)', 'default': True,
-        'description': 'Optional; turn off to collaborate without publishing. Allow routine tools to publish public static sites, such as demos or reports, from the dedicated folder so people can open the result in a browser. Your agent decides when to publish within task permissions and separately granted chat website authority. Sites may remain online after chat closure.'},
+        'description': 'Publish public websites from this folder when your task and chat allow it. Sites may stay online after the chat ends.'},
     'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
 }, 'required': ['collaboration', 'minutes', 'transfers', 'sites']}
 MESSAGE = ('Your choices are saved for future invitations. '
-           'Change options or folders, or revoke access anytime with pantheon_setup.')
+           'Ask to change Pantheon setup or revoke access anytime.')
 
 # Only a package that explicitly supports both transports offers this choice.
 # Existing daemon-only preferences keep their original semantics on upgrade.
 GUI_FORM = copy.deepcopy(FORM)
 GUI_FORM['properties'] = {'host': {'type': 'string', 'title': 'Where are you using Codex?',
-    'enum': ['cli', 'desktop'], 'enumNames': ['Codex CLI', 'Codex desktop app'],
-    'description': 'CLI: ' + DAEMON_DESCRIPTION + '\n\n'
-        'Desktop: allow official queue notices in clearly labelled automated user-message bubbles. '
-        'Notices carry no peer content or new permission. Accepted entries cannot be cancelled by Pantheon and may start a turn after revocation. '
-        'Desktop provider/account identity cannot be independently inspected.'}, **GUI_FORM['properties']}
+    'enum': ['cli', 'desktop'], 'enumNames': ['CLI', 'Desktop']}, **GUI_FORM['properties']}
 GUI_FORM['required'] = ['host', *FORM['required']]
-GUI_FORM['properties']['collaboration']['description'] = COLLABORATION_DESCRIPTION
+GUI_FORM['properties']['collaboration']['description'] = (
+    COLLABORATION_DESCRIPTION + '\n\n' + DAEMON_DESCRIPTION + '\n\n' + DESKTOP_DESCRIPTION)
 
 
 def validate_connect(args):
@@ -175,7 +173,7 @@ class Policy:
             return self.status(thread)
         # Nothing sensitive is inspected and no native policy is changed before
         # the real client's correlated acceptance response.
-        message = ('Changing setup stops existing derived grants; they cannot be reopened. ' if change else '') + MESSAGE
+        message = ('Changing setup stops access to existing chats. ' if change else '') + MESSAGE
         managed = default_folders(self.home / 'pantheon')
         defaults = dict(managed)
         form = copy.deepcopy(GUI_FORM if choose_host else FORM)
@@ -187,8 +185,6 @@ class Policy:
         for capability, field in (('transfers', 'transfer_folder'), ('sites', 'site_folder')):
             if previous:
                 form['properties'][capability]['default'] = previous[capability]
-            else:
-                form['properties'][capability]['description'] += ' Selected by default for new setups.'
             folder = (previous or {}).get('folders', {}).get(capability, defaults[capability])
             if change:
                 form['properties'][field]['default'] = folder

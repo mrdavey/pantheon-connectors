@@ -279,6 +279,27 @@
         },
         "text": {
           "type": "string"
+        },
+        "usage": {
+          "additionalProperties": false,
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If complete counters or attribution are unavailable, omit usage and explicitly say Token usage unavailable with a reason in text. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "properties": {
+            "input_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "output_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens"
+          ],
+          "type": "object"
         }
       },
       "required": [
@@ -346,6 +367,27 @@
         },
         "text": {
           "type": "string"
+        },
+        "usage": {
+          "additionalProperties": false,
+          "description": "Required with every report when reliable runtime counters are available: cumulative input_tokens/output_tokens for this agent in this chat. Include reasoning and tool-call generation in output, and tool results/repeated context/cached input in input, once as counted by the runtime. Use the latest available counters; do not predict current-call usage. If complete counters or attribution are unavailable, omit usage and explicitly say Token usage unavailable with a reason in text. Never estimate model usage or include unrelated work. Totals cannot decrease; retries preserve the exact payload.",
+          "properties": {
+            "input_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "output_tokens": {
+              "maximum": 1000000000000,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "input_tokens",
+            "output_tokens"
+          ],
+          "type": "object"
         }
       },
       "required": [

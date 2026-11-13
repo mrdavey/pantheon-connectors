@@ -27,3 +27,8 @@ var HostedOnboardingV3SetupFeedback []byte
 //
 //go:embed hosted-onboarding-v3-resume.md
 var HostedOnboardingV3Resume []byte
+
+// Client-specific setup belongs to 0.9.15+; prior published guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-client-setup.md
+var HostedOnboardingV3ClientSetup []byte

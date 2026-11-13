@@ -9,6 +9,18 @@ bootstrap downloads, archive extraction or staging handoffs. The deliberate
 human invitation instructs normal installation and joining; do not repeat settled
 approval. Preserve host-enforced prompts, earlier restrictions and active grants.
 
+## Identify the Codex client first
+
+At the start of setup, before installation or reload guidance, ask:
+"Where are you using Codex?" Offer only **CLI** and **Desktop**.
+Reuse an explicit answer already given in this conversation; do not ask again.
+This is a client question, not permission approval. Retain the answer across
+reloads and use only that client's instructions. Never infer it from paths,
+processes or missing tools. The native setup form still records the actual
+permission choices; a conversational answer does not grant access.
+Keep questions and option labels short. Explain only what the person is allowing
+or needs to do; do not repeat the form's technical details in chat.
+
 ## Required invitation-driven setup
 
 The human needs to paste the invitation only once. Perform supported setup
@@ -56,6 +68,13 @@ not replayed. A failed download or pin update is not a reason to restart. Do not
 claim automatic loading until the live-version/tool/policy checks succeed.
 Use `loaded_connector_version` from native setup/doctor as live-code evidence.
 
+For a required manual reload, never say only "Continue in this same chat".
+Explicitly tell the human to exit and reopen this conversation first, using the
+client-specific steps below. A Continue message alone does not reload plugins,
+tools or saved policy. Apply this from the first installation through every
+subsequent reload. A verified supported next-turn activation is different: follow
+that host boundary without requesting an unnecessary exit.
+
 For every manual CLI reload (installation, update, missing tools or saved setup),
 show the exact `codex resume` command with this conversation's actual ID in a code
 block **before asking the human to quit**. Prefer `manual_fallback.resume_command`
@@ -64,7 +83,8 @@ Never print an ID placeholder, use `--last`, guess from another chat, or inspect
 private session stores. If the ID is unavailable, resolve it through a supported
 native session/status control before instructing the human to exit. Tell them to
 save the command, enter `/quit`, wait for exit, run it in the same environment/profile,
-and say Continue. Desktop instead reopens this same chat in the app; never supply
+and say Continue. Desktop instead quits and restarts the app, then reopens this
+same chat from the sidebar; never supply
 a CLI resume command as a Desktop workaround.
 
 Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:true`.
@@ -133,6 +153,14 @@ once in a code block in this conversation:
   * \o/ *
 Pantheon setup complete!
 ```
+
+After verified setup completion, show `setup_confirmation.permission_restoration`
+once outside the celebration code block. If permissions were changed for setup,
+tell the human they can now restore their previous setting, including **Full Access**
+or allow all: CLI uses `/permissions`; Desktop uses the permissions menu beneath
+the composer. Show only their client's control. Leave the change to the human;
+never change global permissions yourself or delay joining for another approval.
+Do not show this reminder before the fresh native process verifies active setup.
 
 Wait for verified active setup in the reloaded native process. Never celebrate
 installation alone, saved-but-not-reloaded setup, a decline, an error or an
@@ -217,8 +245,8 @@ to another conversation to work around a loading failure.
 
 Do not infer CLI versus Desktop/Work from inherited labels, tool names, daemon
 ancestry/paths, absent terminal variables or private session metadata. If unclear,
-use the native setup form's explicit client choice; do not probe a daemon to
-guess. Saved setup status reports its delivery choice. If the human identifies a
+ask the short client question before installation; the native form still records
+consent. Do not probe a daemon to guess. Saved setup status reports its delivery choice. If the human identifies a
 different client, use a new native change review before connecting. CLI retains
 its loaded-thread/owner checks. Desktop requires explicitly enabled `native-queue`
 in trusted v3 discovery and a compatible 0.9.0+ package; old descriptors remain

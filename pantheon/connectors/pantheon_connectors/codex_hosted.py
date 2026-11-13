@@ -407,9 +407,11 @@ class HostedServer:
         return {**result,
                 'notice': 'Pantheon setup stopped before joining. If you declined the form, setup stays off.\n\n'
                           'If no form appeared, Codex automatically declines MCP setup forms in **Full Access** '
-                          '(the **Never** approval policy). This is a Codex limitation. Select **Ask for approval** '
-                          'in this chat’s permissions menu, then say **Continue**. Approve setup when Codex opens '
-                          'the form.',
+                          '(the **Never** approval policy). This is a Codex limitation.',
+                'presentation_instruction': 'Show only the recovery instructions for the client the human identified at the start of setup. '
+                                            'If unknown, ask "Where are you using Codex?" with choices "CLI" and "Desktop". '
+                                            'The recovery options do not identify the current client. '
+                                            'Do not ask for a reload just to change permissions; follow the separate reload instructions when tools or saved policy need reloading.',
                 'recovery': recovery}
 
     def setup_status(self, thread):
@@ -420,10 +422,10 @@ class HostedServer:
             status['delivery'] = value.get('delivery', DEFAULT_DAEMON)
         if status['status'] == 'setup_active' and self.setup_policy.read()['id'] != self.loaded_setup_id:
             resume_command = shlex.join(['codex', 'resume', thread])
-            fallback = ('Restart the Codex desktop app normally, reopen this same chat, then Continue.'
+            fallback = ('Quit and restart the Codex desktop app, reopen this same chat from the sidebar, then say Continue.'
                         if status['delivery'] == GUI_QUEUE else
                         'Before quitting, save this command to resume this conversation:\n\n'
-                        + resume_command + '\n\nEnter /quit and wait for this CLI to exit. '
+                        + '```sh\n' + resume_command + '\n```\n\nEnter /quit and wait for this CLI to exit. '
                         'Run the saved command in the same environment/profile, then say Continue in the resumed conversation.')
             return {**status, 'status': 'native_reload_required', 'membership_started': False,
                     'next_action': 'try_native_reload_same_conversation',
@@ -432,9 +434,14 @@ class HostedServer:
                                         **({'resume_command': resume_command} if status['delivery'] != GUI_QUEUE else {})},
                     'notice': 'Setup saved. First inspect and use supported native in-session plugin reload controls for this same conversation. A queued refresh is not completion: follow the host turn boundary, then verify setup status from a fresh native plugin process. Ask the human to restart only when no supported automatic option is available or it cannot satisfy this requirement; explain the observed limitation. Preserve native approvals and denials. Reuse the original invitation and deadline; no chat grant, membership or receiver has started. Do not retry tools in this old process, call private host RPCs, launch a replacement conversation, or restart the shared daemon to bypass reload.'}
         if status['status'] == 'setup_active':
+            permissions = ('the permissions menu beneath the composer' if status['delivery'] == GUI_QUEUE
+                           else '`/permissions`')
             status['setup_confirmation'] = {
                 'text': '  * \\o/ *\nPantheon setup complete!',
+                'permission_restoration': 'If you changed Codex permissions for setup, you can now restore your previous setting '
+                                          '(including **Full Access** / allow all) using ' + permissions + '.',
                 'instruction': 'After completing installation/setup or a requested setup change, show this once in a code block in this conversation. '
+                               'Show permission_restoration once outside the code block, after the setup confirmation. Leave the setting change to the human. '
                                'Do not repeat it for routine status checks, retries or later invitations. '
                                'This confirms setup, not chat membership, peer readiness or collaboration completion. '
                                'Continue the original invitation without another confirmation question.',
