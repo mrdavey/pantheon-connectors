@@ -35,3 +35,8 @@ var HostedOnboardingV3ClientSetup []byte
 
 //go:embed hosted-onboarding-v3-setup-reuse.md
 var HostedOnboardingV3SetupReuse []byte
+
+// Default setup choices belong to 0.9.19+; earlier published guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-setup-defaults.md
+var HostedOnboardingV3SetupDefaults []byte

@@ -94,13 +94,13 @@ same chat from the sidebar; never supply
 a CLI resume command as a Desktop workaround.
 
 Use `pantheon_setup` with `action:"review"` in this same Codex conversation.
-The native review reuses the known client and records the permission choices.
-It covers incoming replies, existing
-provider usage, routine collaboration, optional local-file/public-site capabilities,
-and explains that accepted choices are saved for later deliberate invitations.
-Saving setup is standard behavior, not a separate opt-in. Let the native form
-explain upfront permissions and how to change or revoke them; do not add another
-confirmation or a "remember setup?" question.
+The native review reuses the known client and asks only for access approval.
+Select CLI or Desktop there only if the client is still unknown. It discloses
+incoming replies, existing provider usage, routine collaboration and the saved
+defaults: access lasts until the chat ends or the agent leaves, with file handoff and
+public publishing available in dedicated folders for authorized tasks. Do not ask
+the human to choose time limits, features, folders or whether to remember setup
+during initial approval. Change setup exposes those options; Revoke stops access.
 The tool receives the human's actual native form response; never supply or invent
 approval arguments. Installation is not this consent.
 If the human specified a fixed overall deadline, pass its original UTC epoch as
@@ -186,10 +186,13 @@ approvals in force for work outside the selected Pantheon capabilities.
 
 Supported file handoff and public static publishing are enabled by default in new
 setup reviews. Use the returned dedicated folders; do not ask the human to invent
-paths or separately enable each feature. The initial form omits folder inputs;
-`pantheon_setup(action:"change")` offers customization and opt-out. Preserve saved
-choices and narrower trial limits. Defaults never authorize an actual upload,
-publication or file execution outside the human’s task and chat grants.
+paths or separately enable each feature. Initial access approval has no time-limit,
+feature or folder choices; those defaults are saved after native acceptance.
+`pantheon_setup(action:"change")` offers customization and opt-out. Re-review preserves saved opt-outs, custom
+folders, conversation-only preferences and fixed deadlines. Expired setup needs
+an explicit Change setup; review never silently renews it. Defaults never authorize
+an actual upload, publication or file execution outside the human’s task and chat
+grants.
 Choose folders for shareable files. Credential paths and host profile data are
 blocked, with access to the selected dedicated Pantheon folders. Use regular files
 without symlinks or hardlinks.

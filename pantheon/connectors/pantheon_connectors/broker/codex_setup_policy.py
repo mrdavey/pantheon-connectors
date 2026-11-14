@@ -63,8 +63,12 @@ FORM = {'type': 'object', 'properties': {
         'description': 'Publish public websites from this folder when your task and chat allow it. Sites may stay online after the chat ends.'},
     'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
 }, 'required': ['minutes', 'transfers', 'sites']}
-MESSAGE = ('Your choices are saved for future invitations. '
+MESSAGE = ('Access is saved for future invitations. '
            'Ask to change Pantheon setup or revoke access anytime.')
+DEFAULTS_DESCRIPTION = (
+    'Access stops when each chat ends, expires or the agent leaves. '
+    'File handoff and public website publishing use dedicated Pantheon folders, '
+    'only when your task and chat allow them. Published sites may stay online.')
 
 # Only a package that explicitly supports both transports offers this choice.
 # Existing daemon-only preferences keep their original semantics on upgrade.
@@ -139,6 +143,32 @@ def choices(response, now, form=FORM, *, defaults=None, creatable=()):
     return result
 
 
+def access_choices(response, now, form, *, previous, defaults, creatable):
+    """Save preferences only after real native acceptance of the access request."""
+    if not isinstance(response, dict) or response.get('action') != 'accept':
+        return None
+    value = response.get('content')
+    # Codex renders an empty schema as Allow/Deny and returns null content.
+    if value is None and not form['properties'] and not form['required']:
+        value = {}
+    if (not isinstance(value, dict) or set(value) != set(form['required'])
+            or ('host' in value and value['host'] not in ('cli', 'desktop'))):
+        raise Blocked('The native access response is incomplete; no permissions were saved')
+    previous = previous or {}
+    # Defaults never renew a saved time limit or enable a previously disabled feature.
+    end = previous.get('expires_at', 0)
+    if end and end <= now:
+        raise Blocked('The saved time limit has expired. Use Change setup to choose a new limit.')
+    preferences = dict(minutes='0', transfers=previous.get('transfers', True),
+                       sites=previous.get('sites', True), **value)
+    # Reuse the folder/type validation, with a genuine accepted native response.
+    selected = choices({**response, 'content': preferences}, now,
+                       GUI_FORM if 'host' in value else FORM,
+                       defaults=defaults, creatable=creatable)
+    selected.update(expires_at=end, remember=previous.get('remember', True))
+    return selected
+
+
 class Policy:
     def __init__(self, path, native_home=None):
         self.path = Path(path)
@@ -190,6 +220,8 @@ class Policy:
         managed = default_folders(self.home / 'pantheon')
         defaults = dict(managed)
         previous = self.read()
+        if not change and previous and previous.get('expires_at') and previous['expires_at'] <= time.time():
+            raise Blocked('The saved time limit has expired. Use Change setup to choose a new limit.')
         selected_client = client or (('desktop' if previous.get('delivery') == GUI_QUEUE else 'cli') if previous else None)
         form = copy.deepcopy(GUI_FORM if choose_host and selected_client is None else FORM)
         if selected_client:
@@ -198,24 +230,30 @@ class Policy:
         else:
             disclosure = DAEMON_DESCRIPTION + ('\n\n' + DESKTOP_DESCRIPTION if choose_host else '')
         message = COLLABORATION_DESCRIPTION + '\n\n' + disclosure + '\n\n' + message
-        if expires_at is not None:
+        if change and expires_at is not None:
             form['properties']['minutes']['description'] += (
                 '\nMaximum deadline: ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(expires_at))
                 + ', including later invitations. An earlier selected limit still applies.')
-        previous = self.read()
         for capability, field in (('transfers', 'transfer_folder'), ('sites', 'site_folder')):
             if previous:
                 form['properties'][capability]['default'] = previous[capability]
             folder = (previous or {}).get('folders', {}).get(capability, defaults[capability])
             if change:
                 form['properties'][field]['default'] = folder
-            else:
-                del form['properties'][field]
-                form['properties'][capability]['description'] += '\nFolder: ' + folder
             defaults[capability] = folder
+        if not change:
+            form = {'type': 'object', 'properties': {
+                k: v for k, v in form['properties'].items() if k == 'host'},
+                'required': ['host'] if 'host' in form['properties'] else []}
+            message += '\n\n' + (DEFAULTS_DESCRIPTION if not previous else
+                'Your saved time limit, file settings and conversation scope stay unchanged.')
+            deadline = min(x for x in (expires_at, (previous or {}).get('expires_at'), float('inf')) if x)
+            if math.isfinite(deadline):
+                message += '\nAccess ends by ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(deadline)) + '.'
         response = elicit(message, form)
-        selected = choices(response, time.time(), form,
-                           defaults=defaults, creatable=managed.values())
+        selected = (choices(response, time.time(), form, defaults=defaults, creatable=managed.values())
+                    if change else access_choices(response, time.time(), form, previous=previous,
+                                                  defaults=defaults, creatable=managed.values()))
         if selected is None:
             action = response.get('action') if isinstance(response, dict) else None
             if action == 'decline':
@@ -237,7 +275,10 @@ class Policy:
                       for capability, folder in selected['folders'].items()}
         private_directory(self.path.parent, repair_owned=True)
         with private_lock(self.path.with_suffix('.lock')):
-            if not change and self.active(self.read(), thread):
+            current = self.read()
+            if current != previous:
+                raise Blocked('Pantheon setup changed during review; check setup status and review the current settings.')
+            if not change and self.active(current, thread):
                 return self.status(thread)
             with tempfile.TemporaryDirectory(prefix='review-', dir=self.path.parent) as temporary:
                 captured = inspect(Path(temporary) / 'setup.json', **({'delivery': selected['delivery']} if choose_host else {}))

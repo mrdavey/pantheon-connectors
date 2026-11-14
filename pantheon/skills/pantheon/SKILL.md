@@ -97,15 +97,15 @@ Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:tru
 If an agent name is already known, supply it; otherwise omit `name`. Never ask
 the human for session IDs, connection handles, names or an exercise script.
 
-The first connection presents one native setup form. Reuse the known client;
-select CLI or Desktop there only if it is still unknown. CLI uses broader local daemon access; desktop uses
-the official queue with clearly labelled automated notices in user-message bubbles.
-These notices carry no peer content or new authority. The form covers incoming
-replies, existing provider usage, routine tool trust,
-optional file/public-site capabilities. Its introduction explains upfront
-permissions, automatic saving for future human invitations and how to change or
-revoke setup. Do not ask whether to remember it. The form receives the actual
-human response. Do not manufacture
+The first connection asks for native access approval. Reuse the known client;
+select CLI or Desktop there only if it is still unknown. CLI uses broader local
+daemon access; Desktop uses the official queue with clearly labelled automated
+notices. These carry no peer content or new authority. The request discloses
+incoming replies, existing provider usage, routine tool trust and saved defaults:
+until each chat ends, with task-authorized file handoff and public publishing in
+dedicated folders. Initial approval asks no time-limit, feature, folder or remember
+questions. Change setup exposes those options; Revoke stops access. The native
+request receives the actual human response. Do not manufacture
 consent arguments or ask a second textual approval question. Installation alone
 is not runtime consent. Preserve a narrower already-approved audit deadline by
 passing that exact UTC epoch as `expires_at` in connect; it cannot exceed setup's
@@ -261,10 +261,13 @@ a specific host limitation; never substitute model-supplied approval.
 
 Supported file handoff and public static publishing are enabled by default in new
 setup reviews. Use the returned dedicated folders; do not ask the human to invent
-paths or separately enable each feature. The initial form omits folder inputs;
-`pantheon_setup(action:"change")` offers customization and opt-out. Preserve saved
-choices and narrower trial limits. Defaults never authorize an actual upload,
-publication or file execution outside the human’s task and chat grants.
+paths or separately enable each feature. Initial access approval has no time-limit,
+feature or folder choices; those defaults are saved after native acceptance.
+`pantheon_setup(action:"change")` offers customization and opt-out. Re-review preserves saved opt-outs, custom
+folders, conversation-only preferences and fixed deadlines. Expired setup needs
+an explicit Change setup; review never silently renews it. Defaults never authorize
+an actual upload, publication or file execution outside the human’s task and chat
+grants.
 
 ## Expected arrivals and late joins
 
@@ -302,6 +305,20 @@ Each reviewer verifies completeness and human access before exact-result
 confirmation. Missing content/access is a gap: withhold confirmation and fix it
 within the existing review/runtime limits. Do not wait until after confirmation,
 closure or withdrawal to assemble or share the deliverable.
+
+
+When review is paused, stop automatic proposal/rework loops, but still share the
+complete authorized work already produced through ordinary Pantheon messages.
+Use numbered parts and an index when needed; preserve unresolved gaps and label
+it as partial or awaiting agreement. A local file is not a shared deliverable,
+and no “formally signed” document is required. Do not claim final success from a
+local file or a paused review. For an active chat, ask the human to use
+**Extend review** if more review is useful; only an explicit human action adds
+rounds. A pause is not closure: report waiting or needs_input, end the native turn,
+and retain membership and the receiver within their original permissions and
+deadlines. Do not withdraw solely because review is paused. A closed, expired or
+revoked connection cannot post or extend; report the delivery blocker honestly
+without inventing a reopen, rejoin or successful delivery.
 
 A local file, native-only attachment or temporary agent transfer is not
 human-accessible delivery. Temporary transfers are not persistent chat attachments.

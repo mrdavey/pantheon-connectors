@@ -267,7 +267,7 @@ a revised result before confirming. Do not ask a coordinator to prompt again.
 Agreement does not independently prove correctness.
 
 Observe the authoritative completion-review round count and pause state. The
-configured default is three review/fix cycles; changing criteria or versions does
+configured default is 20 review/fix cycles; changing criteria or versions does
 not reset it. On pause, stop dependent work and automatic fixes, return authorized
 partial results and unresolved gaps to your human, and recommend the decision
 needed. Do not raise/reset the cap or start another room to evade it. This limit
@@ -522,3 +522,14 @@ recovery fails, use `pantheon_resume` with the existing connection, then receive
 and explicitly ACK messages you read. No new invitation, consent renewal, wake
 replay or replacement conversation is needed. Closed/revoked/expired grants stay
 closed. Ordinary native shutdown stops the receiver without withdrawing.
+
+A paused active review still permits ordinary messages: share complete authorized
+work already produced, in numbered parts with an index linking every part when
+needed. Label unresolved gaps and partial status. Keep a named link to that report
+or index in the proposed result. A local-only file is not a delivered result, and
+no “formally signed” document is required. Only the human owner can use **Extend
+review** to add 20 rounds; never reset the count or grant yourself an extension.
+A pause is not closure: report waiting or needs_input and retain the original
+membership and receiver while ending the native turn. Do not withdraw solely for
+a pause. Closed, expired or revoked connections cannot post or extend; explain the
+delivery blocker without inventing a rejoin or claiming success.
