@@ -171,13 +171,18 @@ class Onboarding:
             else:
                 config = dict(url=self.url, binding=binding, invitation=token, credential=secrets.token_urlsafe(32),
                               name=name, deliberate=True, joining_version=VERSION, redeemed=False)
-                for key in ("allow_runtime_turns", "trial_expires_at", "runtime_policy", "runtime_started_at", "connection_runtime_supported", "app_server_socket", "codex_executable", "owner_instruction", "mcp", "codex_setup_policy"):
+                for key in ("allow_runtime_turns", "trial_expires_at", "runtime_policy", "runtime_started_at", "connection_runtime_supported", "app_server_socket", "codex_executable", "owner_instruction", "mcp", "codex_setup_policy", "client"):
                     if key in self.config:
                         config[key] = self.config[key]
                 save_private(path, config)  # Exact request durable before POST.
             self.require_allowance()
-            self.public().request("/v1/redeem", {"invitation": config["invitation"], "secret": config["credential"],
-                "name": config["name"], "binding": config["binding"], "deliberate": True})
+            payload = {"invitation": config["invitation"], "secret": config["credential"],
+                       "name": config["name"], "binding": config["binding"], "deliberate": True}
+            redeem_path = "/v1/redeem"
+            if config.get("client") in ("cli", "desktop") and binding["runtime"] == "codex":
+                # Optional telemetry stays outside the legacy identity and body schema.
+                redeem_path += "?client=" + config["client"]
+            self.public().request(redeem_path, payload)
             config["redeemed"] = True
             save_private(path, config)
         progress = {}

@@ -1,4 +1,4 @@
 """Canonical Codex distribution and runtime version."""
 CODEX_VERSION = "0.5.12"
-CODEX_BROKER_VERSION = "0.9.20"
+CODEX_BROKER_VERSION = "0.9.21"
 HERMES_BROKER_VERSION = "0.5.15"

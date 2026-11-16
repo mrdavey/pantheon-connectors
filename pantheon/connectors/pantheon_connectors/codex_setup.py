@@ -60,6 +60,8 @@ def prepare(setup_file, url, profile, *, delivery=None, owner_socket=None, nativ
                       binding=dict(runtime='codex', surface='native-queue' if delivery in (ACTIVE_WAIT, GUI_QUEUE) else ('app-server-tool-output' if delivery == DEFAULT_DAEMON else delivery), profile=profile, session=identity,
                                    version=cli_version),
                       allow_runtime_turns=False, allow_ui_fallback=False, allow_active_wait=False, trial_expires_at=0, max_notices=0 if delivery == ACTIVE_WAIT else 2)
+        if delivery in (DEFAULT_DAEMON, GUI_QUEUE):
+            config['client'] = 'desktop' if delivery == GUI_QUEUE else 'cli'
         if delivery == GUI_QUEUE:
             from .codex_queue import QueueCLI
             config.update(allow_tool_output=False, allow_daemon_access=False,
@@ -98,6 +100,8 @@ def prepare(setup_file, url, profile, *, delivery=None, owner_socket=None, nativ
         save_private(setup_file, config)
     result = dict(status='prepared_disabled', setup_file=str(setup_file), binding=config['binding'],
                   notice='Preparation enables no runtime and redeems no invitation. Reuse settled consent if the observed scope matches; review only missing or changed scope before activation.')
+    if 'client' in config:
+        result['client'] = config['client']
     if delivery == DEFAULT_DAEMON:
         result.update(reviewed_provider=config['reviewed_provider'],
                       account_scope=dict(exact_account_verified=False,
