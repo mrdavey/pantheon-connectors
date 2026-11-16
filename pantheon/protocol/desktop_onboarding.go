@@ -40,3 +40,8 @@ var HostedOnboardingV3SetupReuse []byte
 //
 //go:embed hosted-onboarding-v3-setup-defaults.md
 var HostedOnboardingV3SetupDefaults []byte
+
+// Ordered setup belongs to 0.9.20+; earlier published guides stay immutable.
+//
+//go:embed hosted-onboarding-v3-setup-flow.md
+var HostedOnboardingV3SetupFlow []byte

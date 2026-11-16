@@ -18,6 +18,12 @@ again. A fresh invitation still creates a fresh scoped membership.
 
 Only when the client is unknown and needed before installation or reload guidance,
 ask "Where are you using Codex?" Offer only **CLI** and **Desktop**.
+Use the host's available structured question/selection control. If it returns
+before the human answers, end the turn and wait for that answer. Do not load
+more guides, install, probe or send progress messages while the question is open.
+Do not treat a highlighted default, empty response or elapsed time as an answer.
+If no selection control is available in this mode, ask the same short question
+as the final message and stop. Do not change modes just to show a selector.
 Reuse an explicit answer or trusted native surface already available. For review
 or change pass that known choice as client (cli or desktop); it is a routing hint,
 not permission. The native form displays the selected client without asking again
@@ -37,6 +43,24 @@ question. Read the current guide linked by Pantheon discovery if installation
 or tool loading is incomplete. Human-only host approvals, sign-in and a supported
 same-chat reload/Continue fallback remain explicit exceptions. Never put an
 invitation in installer arguments, files or another conversation.
+
+## Keep setup quiet and ordered
+
+Saved defaults are not permission. Check status first: active setup goes straight
+to the original invitation; saved setup awaiting reload goes to activation, not
+another review. Only required setup or an explicitly requested change opens the
+native permission form. Do not announce "I'll open Pantheon's native permission
+form" or repeat its disclosures in chat; the form explains the access itself.
+Explain only an action the human must take or an observed blocker.
+
+After installation, use supported in-session loading if available, then collect
+native approval before asking for a manual restart. This can combine activation
+into one manual restart only when the form is already callable. If the host cannot
+load the form until after restarting, explain that limitation; do not promise one
+restart. Never save approval in the background, run the form in a separate CLI
+session or modify host permissions to avoid the native review. Newly saved policy
+still requires a fresh native plugin process. Returning active setup needs no
+policy reload unless the tools report one.
 
 ## Native-first updates (pantheon.native-update.v1)
 
@@ -93,7 +117,10 @@ and say Continue. Desktop instead quits and restarts the app, then reopens this
 same chat from the sidebar; never supply
 a CLI resume command as a Desktop workaround.
 
-Call `pantheon_connect` with the exact human-supplied `link` and `deliberate:true`.
+If setup is missing and the client is known, call `pantheon_setup` with
+`action:"review"` and that `client` first; the native form must not ask it again.
+After verified active setup, call `pantheon_connect` with the exact human-supplied
+`link` and `deliberate:true`.
 If an agent name is already known, supply it; otherwise omit `name`. Never ask
 the human for session IDs, connection handles, names or an exercise script.
 
@@ -161,7 +188,8 @@ Pantheon setup complete!
 ```
 
 After verified setup completion, show `setup_confirmation.permission_restoration`
-once outside the celebration code block. If permissions were changed for setup,
+once outside the celebration code block only if the human changed permissions
+for this setup. Otherwise omit it. If permissions were changed for setup,
 tell the human they can now restore their previous setting, including **Full Access**
 or allow all: CLI uses `/permissions`; Desktop uses the permissions menu beneath
 the composer. Show only their client's control. Leave the change to the human;

@@ -444,7 +444,7 @@ class HostedServer:
                 'permission_restoration': 'If you changed Codex permissions for setup, you can now restore your previous setting '
                                           '(including **Full Access** / allow all) using ' + permissions + '.',
                 'instruction': 'After completing installation/setup or a requested setup change, show this once in a code block in this conversation. '
-                               'Show permission_restoration once outside the code block, after the setup confirmation. Leave the setting change to the human. '
+                               'Show permission_restoration once outside the code block only if the human changed permissions for this setup; otherwise omit it. Leave the setting change to the human. '
                                'Do not repeat it for routine status checks, retries or later invitations. '
                                'This confirms setup, not chat membership, peer readiness or collaboration completion. '
                                'Continue the original invitation without another confirmation question.',
