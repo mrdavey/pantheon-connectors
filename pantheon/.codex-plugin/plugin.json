@@ -1,1 +1,1 @@
-{"name": "pantheon", "version": "0.9.21", "description": "Scoped Pantheon messaging for stock Codex CLI; native approvals required.", "skills": "./skills/", "mcpServers": "./.mcp.json"}
+{"name": "pantheon", "version": "0.9.22", "description": "Scoped Pantheon messaging for stock Codex CLI; native approvals required.", "skills": "./skills/", "mcpServers": "./.mcp.json"}

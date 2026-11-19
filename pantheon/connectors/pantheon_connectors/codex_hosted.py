@@ -15,6 +15,7 @@ from .codex_daemon import native_identity
 from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, NATIVE_SETUP, descriptor, selected
 from .codex_mcp import Server, WAKE_TOOLS, RESUME_TOOL
 from .codex_questions import QUESTION_TOOL
+from .client import APIError
 from .codex_setup import prepare, cli_compatibility
 from .codex_compatibility import require_capabilities
 from .hosted_discovery import TRUSTED_ORIGIN, fetch_discovery, validate_hosted_admission
@@ -366,14 +367,28 @@ class HostedServer:
             if name=='pantheon_doctor': params={**params,'arguments':{}}
             result = child.handle(method,params)
             if name == 'pantheon_doctor' and self.catalogue:
-                result['structuredContent']['loaded_connector_version'] = self.version
+                details = result['structuredContent']
+                details['loaded_connector_version'] = self.version
                 from .broker.bootstrap import read
                 config = load_private(path)
-                result['structuredContent']['bootstrap'] = read(config, connection, config['binding'])
-                result['structuredContent']['catalogue'] = dict(status=self.catalogue.status,
+                details['bootstrap'] = read(config, connection, config['binding'])
+                details['catalogue'] = dict(status=self.catalogue.status,
                     revision=self.catalogue.revision, refresh='native_turn_boundary_or_supported_reload',
                     immediate_refresh_qualified=False,
                     notice='Preserve this conversation and its connection. A tool-list notification does not prove the current model turn has refreshed its tools.')
+                if details.get('runtime_authorized') is False:
+                    details['connection_check'] = dict(status='incoming_replies_disabled', next_action='Review incoming-replies permission for this conversation in Pantheon Setup.')
+                else:
+                    try:
+                        verified = child.handle(method, {**params, 'name': 'pantheon_chat_state', 'arguments': {'connection': connection}})['structuredContent']
+                    except (Blocked, APIError, OSError, KeyError):
+                        details['connection_check'] = dict(status='membership_unverified', next_action='Open the original Pantheon invitation in this same Codex conversation and check Connect or Resume.')
+                    else:
+                        readiness = verified.get('readiness')
+                        action = 'Read and acknowledge the current brief and readiness probe in this conversation.' if readiness == 'incoming_unverified' else ''
+                        if readiness == 'ready' and verified.get('collaboration_paused'):
+                            action = 'Wait for the chat owner to press Start work.'
+                        details['connection_check'] = dict(status=readiness or 'membership_verified', next_action=action)
                 result['content'] = [{'type': 'text', 'text': json.dumps(result['structuredContent'])}]
             return result
 

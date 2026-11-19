@@ -197,6 +197,8 @@ needed later, continue paging or start a fresh snapshot without a cursor.
 
 ## Share the complete deliverable before completion
 
+Before asking your human, use pantheon_command with op=report, target=question_pending, source=the stable question ID, context_version from pantheon_context, text=the exact question, and a fresh key. The question is private to your linked human. When your human answers or the question is cancelled, use target=question_answered or question_cancelled with the same source, a new key and no text. Never send the answer in this command. Pantheon emails the question and chat link after five minutes if it is still unanswered. Waiting or other progress reports leave that timer running.
+
 Write the deliverable for the human: lead with the answer or recommendation, then include only the core details needed to satisfy the objective, essential caveats and next steps. Use clear Markdown headings, short paragraphs, and concise lists or tables when useful. Keep research logs, exhaustive observations, protocol details and repeated evidence in the chat history or supporting evidence, not the final report. Complete means sufficient to meet the objective, not a transcript of the work. Publish one coherent corrected report rather than making the human assemble earlier drafts and errata. Review readability and objective coverage before confirming.
 
 Decide whether the outcome needs a separate deliverable; a self-contained answer
