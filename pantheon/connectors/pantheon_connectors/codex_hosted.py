@@ -12,6 +12,7 @@ from uuid import UUID
 from .codex_audit import Audit
 from .version import CODEX_VERSION
 from .codex_daemon import native_identity
+from . import codex_project
 from .codex_delivery import DEFAULT_DAEMON, GUI_QUEUE, NATIVE_SETUP, descriptor, selected
 from .codex_mcp import Server, WAKE_TOOLS, RESUME_TOOL
 from .codex_questions import QUESTION_TOOL
@@ -58,6 +59,7 @@ class HostedServer:
     def __init__(self, root=None):
         self.root = Path(root) if root else Path(os.environ.get('CODEX_HOME', '~/.codex')).expanduser() / 'pantheon' / 'hosted'
         self.children = {}
+        self.project_wakes = {}
         self.lock = threading.RLock()
         self.catalogue = None
         self.closed = False
@@ -75,6 +77,7 @@ class HostedServer:
         self.elicit = unavailable_review
         metadata = descriptor()
         self.version = metadata.get('package_version', CODEX_VERSION) if metadata else CODEX_VERSION
+        self.projects_enabled = bool(metadata and metadata.get('projects_contract') == codex_project.CONTRACT)
         self.setup_enabled = bool(metadata and metadata.get('setup_contract') == codex_setup_policy.CONTRACT)
         if metadata and metadata.get('broker_contract') == 'pantheon.broker.v1':
             from .broker.adapter import ToolSnapshot
@@ -88,6 +91,8 @@ class HostedServer:
     def resume_conversation(self, thread, *, connection=None):
         """Restore a native reopen or an exact recorded receiver after owner replacement."""
         from itertools import islice
+        if self.projects_enabled:
+            self.resume_project_wakes(thread)
         folder = self.root / hashlib.sha256(thread.encode()).hexdigest()
         private_directory(folder)
         complete = True
@@ -112,6 +117,40 @@ class HostedServer:
                 # Explicit resume/doctor reports the original guard failure.
                 complete = False
         return complete
+
+    def start_project_wake(self, thread, connection, *, work=False):
+        from .codex_project_wake import run, wait_for_work
+        receiver = wait_for_work if work else run
+        key = (thread, connection, work)
+        with self.lock:
+            if self.closed or key in self.project_wakes or len(self.project_wakes) >= 20:
+                return
+            stop = threading.Event()
+
+            def receive():
+                try:
+                    receiver(thread, connection, self.setup_policy, stop)
+                except (OSError, ValueError, Blocked, KeyError):
+                    pass  # Opt-in can expire, be revoked or lose the pinned owner.
+                finally:
+                    with self.lock:
+                        self.project_wakes.pop(key, None)
+
+            worker = threading.Thread(target=receive, name="pantheon-project-wake", daemon=True)
+            self.project_wakes[key] = (stop, worker)
+            worker.start()
+
+    def resume_project_wakes(self, thread):
+        try:
+            path, _ = codex_project.native_scope(thread, create=False)
+            account = load_private(path)
+        except (OSError, ValueError, Blocked):
+            return
+        if account.get("focus") in account.get("projects", []) and account.get("taskWait"):
+            self.start_project_wake(thread, account["focus"], work=True)
+        for connection in account.get("wakes", {}):
+            if codex_project.CONNECTION.fullmatch(connection) and connection in account.get("projects", []):
+                self.start_project_wake(thread, connection)
 
     def broker_active(self):
         with self.lock:
@@ -138,13 +177,33 @@ class HostedServer:
             tools=[{**tool,'inputSchema':dict(type='object',properties={'connection':{'type':'string'}},required=['connection'],additionalProperties=False)} if tool['name']=='pantheon_doctor' else tool for tool in (self.catalogue.tools() if self.catalogue else TOOLS)]
             setup = [codex_setup_policy.TOOL] if self.setup_enabled else [PREPARE, AUTHORIZE]
             connector = codex_setup_policy.CONNECT_TOOL if self.setup_enabled else connect.TOOL
-            return {'tools':[connector, RESUME_TOOL, QUESTION_TOOL]+setup+tools+WAKE_TOOLS}
+            project_tools = [codex_project.tool()] if self.projects_enabled else []
+            return {'tools':[connector, RESUME_TOOL, QUESTION_TOOL]+setup+tools+WAKE_TOOLS+project_tools}
         if method != 'tools/call': raise Blocked('Unsupported plugin method')
         thread = native_identity(params.get('_meta'))
         name,args=params.get('name'),params.get('arguments',{})
         if not isinstance(args,dict): raise Blocked('Expected tool arguments')
         metadata=descriptor()
         if not metadata or metadata.get('version')!=3 or metadata.get('service_origin')!=TRUSTED_ORIGIN: raise Blocked('Portable package trust configuration is missing')
+        if name == 'pantheon_project':
+            if not self.projects_enabled:
+                raise Blocked('This package does not support projects')
+            op, values = codex_project.checked_args(args)
+            wake_setup = None
+            task_wait = op == "focus" and values.get("resumeWhenTasksReady")
+            if task_wait or op == "wake_consent" and values["minutes"]:
+                from .codex_project_wake import prepare_wake
+                path, _ = codex_project.native_scope(thread, create=False)
+                if values["connection"] not in load_private(path).get("projects", []):
+                    raise Blocked("Join this project in the original Codex conversation before enabling a wake.")
+                wake_setup = prepare_wake(path, thread, values["connection"], self.setup_policy,
+                                          self.elicit, values.get("minutes", 0), values.get("limit", 0))
+            value = codex_project.execute(args, thread=thread, wake_setup=wake_setup)
+            if wake_setup and not task_wait:
+                self.start_project_wake(thread, values["connection"])
+            if op == "work" and value.get("next") == "wait_for_tasks":
+                self.start_project_wake(thread, values["connection"], work=True)
+            return self.result(value)
         if self.setup_enabled:
             if name == 'pantheon_setup':
                 if ('action' not in args or set(args) - {'action', 'expires_at', 'client'}
@@ -474,4 +533,9 @@ class HostedServer:
             self.catalogue.close()
         with self.lock:
             self.closed = True
+            workers = list(self.project_wakes.values())
+            for stop, _ in workers:
+                stop.set()
             for child in self.children.values(): child.close()
+        for _, worker in workers:
+            worker.join(timeout=2)

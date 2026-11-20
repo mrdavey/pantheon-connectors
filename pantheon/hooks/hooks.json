@@ -1,1 +1,1 @@
-{"hooks": {"SessionStart": [{"matcher": "^(startup|resume)$", "hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/session_open.py\"", "timeout": 5}]}]}}
+{"hooks": {"SessionStart": [{"matcher": "^(startup|resume)$", "hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/session_open.py\"", "timeout": 5}]}], "PreToolUse": [{"hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/project_hook.py\"", "timeout": 8}]}], "Stop": [{"hooks": [{"type": "command", "command": "python3 \"${PLUGIN_ROOT}/project_hook.py\"", "timeout": 12}]}]}}

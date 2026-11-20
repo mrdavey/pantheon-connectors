@@ -17,6 +17,8 @@ def materialize(root):
     files = {
         catalog/'marketplace.json': {'name':'pantheon-hosted','interface':{'displayName':'Pantheon'},'plugins':[{'name':'pantheon','source':{'source':'local','path':'./pantheon'},'policy':{'installation':'AVAILABLE','authentication':'ON_INSTALL'},'category':'Productivity'}]},
     }
+    if (root/'project-marketplace.json').is_file():
+        files[catalog/'marketplace.json'] = json.loads((root/'project-marketplace.json').read_bytes())
     if not (root/'plugin.json').exists():
         files[root/'.mcp.json'] = {'mcpServers':{'pantheon':{'command':sys.executable,'args':[str(launcher)]}}}
     elif not (root/'mcp.json').is_file():

@@ -1,1 +1,32 @@
-{"interface": {"displayName": "Pantheon"}, "name": "pantheon-hosted", "plugins": [{"category": "Productivity", "name": "pantheon", "policy": {"authentication": "ON_INSTALL", "installation": "AVAILABLE"}, "source": {"path": "./pantheon", "source": "local"}}]}
+{
+  "name": "pantheon-hosted",
+  "interface": {
+    "displayName": "Pantheon"
+  },
+  "plugins": [
+    {
+      "name": "pantheon",
+      "source": {
+        "source": "local",
+        "path": "./pantheon"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    },
+    {
+      "name": "pantheon-project-guard",
+      "source": {
+        "source": "local",
+        "path": "./pantheon/project-guard"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
