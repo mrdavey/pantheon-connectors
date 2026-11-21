@@ -49,19 +49,18 @@ DAEMON_DESCRIPTION = ('CLI: allow broader local Codex access, used only for invi
     'Your exact billing account may not be visible.')
 DESKTOP_DESCRIPTION = ('Desktop: automated notifications appear as messages and may still arrive after you revoke access. '
     'Pantheon cannot verify your billing account.')
+FOLDER_FIELDS = {'transfers': 'transfer_folder', 'sites': 'site_folder'}
 FORM = {'type': 'object', 'properties': {
     # Codex CLI 0.162.1 rejects the entire form when any field is numeric.
     # Its supported single-select string enum preserves a real native choice.
     'minutes': {'type': 'string', 'title': 'Time limit',
         'enum': ['0', '15', '30', '45', '60'],
         'enumNames': ['Until each chat ends', '15 minutes', '30 minutes', '45 minutes', '60 minutes'], 'default': '0',
-        'description': 'Stops when the agent leaves or the chat ends or expires. A timed limit starts now, includes later invitations and never resets on retry.'},
-    'transfers': {'type': 'boolean', 'title': 'File handoff (optional)', 'default': True,
-        'description': 'Send or receive files with one collaborator using this folder, within your task and chat permissions. Size and expiry limits apply.'},
-    'transfer_folder': {'type': 'string', 'title': 'File handoff folder (absolute path)', 'default': ''},
-    'sites': {'type': 'boolean', 'title': 'Public website publishing (optional)', 'default': True,
-        'description': 'Publish public websites from this folder when your task and chat allow it. Sites may stay online after the chat ends.'},
-    'site_folder': {'type': 'string', 'title': 'Public website source folder (absolute path)', 'default': ''},
+        'description': 'Stops when the agent leaves or the chat ends or expires. A timed limit starts when you save, includes later invitations and never resets on retry.'},
+    'transfers': {'type': 'string', 'title': 'File handoff',
+        'description': 'Send or receive files with one collaborator when your task and chat allow it.'},
+    'sites': {'type': 'string', 'title': 'Public website publishing',
+        'description': 'Publish from the selected folder. Published sites may stay online after the chat ends.'},
 }, 'required': ['minutes', 'transfers', 'sites']}
 MESSAGE = ('Access is saved for future invitations. '
            'Ask to change Pantheon setup or revoke access anytime.')
@@ -101,72 +100,100 @@ def provider(config):
     return {'provider': config.get('reviewed_provider'), 'account': config.get('reviewed_account')}
 
 
-def choices(response, now, form=FORM, *, defaults=None, creatable=()):
+def accepted_fields(response, form):
     if not isinstance(response, dict) or response.get('action') != 'accept':
         return None
     value = response.get('content')
-    if (not isinstance(value, dict) or set(value) - (set(form['properties']) | {'collaboration'})
-            or not set(form['required']) <= set(value)
-            or any(type(value.get(k)) is not bool for k in ('transfers', 'sites'))
-            or type(value['minutes']) is not str or value['minutes'] not in FORM['properties']['minutes']['enum']):
+    # Codex returns null content for a form with no fields.
+    if value is None and not form['required']:
+        value = {}
+    if not isinstance(value, dict) or set(value) != set(form['required']):
         raise Blocked('The native setup response is incomplete; no permissions were saved')
-    if 'host' in form['properties'] and value['host'] not in ('cli', 'desktop'):
-        raise Blocked('Select the current native client; no automatic fallback is permitted')
-    # Accept old in-flight forms without turning an explicit opt-out into consent.
-    if 'collaboration' in value:
-        if type(value['collaboration']) is not bool:
-            raise Blocked('Invalid collaboration choice; no permissions were saved')
-        if not value['collaboration']:
-            return None
-    minutes = int(value['minutes'])
-    # Saving setup is part of the disclosed native acceptance, not a separate
-    # choice. Retain the stored field so prior conversation-only consent is never
-    # widened just by loading this package.
-    result = {'remember': True, 'expires_at': now + 60 * minutes if minutes else 0,
-              'transfers': value['transfers'], 'sites': value['sites'], 'folders': {}}
+    for name, field in form['properties'].items():
+        if type(value[name]) is not str or ('enum' in field and value[name] not in field['enum']):
+            raise Blocked('The native setup response has an invalid choice; no permissions were saved')
+    return value
+
+
+def preferences(value, folders, creatable, *, end, remember=True):
+    result = {'remember': remember, 'expires_at': end, 'folders': {}}
     if 'host' in value:
         result['delivery'] = GUI_QUEUE if value['host'] == 'desktop' else DEFAULT_DAEMON
-    for capability, field in (('transfers', 'transfer_folder'), ('sites', 'site_folder')):
-        if not result[capability]:
+    for capability in FOLDER_FIELDS:
+        result[capability] = capability in folders
+        if capability not in folders:
             continue
-        folder = value.get(field)
-        if folder is None or folder == '':
-            folder = (defaults or {}).get(capability)
-        if not isinstance(folder, str) or not folder or not Path(folder).is_absolute():
-            raise Blocked('Selected file capabilities require an existing absolute folder; no permissions were saved')
+        folder = folders[capability]
+        if not isinstance(folder, str) or not Path(folder).is_absolute():
+            raise Blocked('Enter an existing absolute folder path; no permissions were saved')
         path = Path('/', *absolute_parts(folder))
         if (any(p.is_symlink() for p in (path, *path.parents))
-                or (not path.is_dir() and folder not in creatable)
+                or (not path.is_dir() and folder != creatable.get(capability))
                 or (path.exists() and not path.is_dir())):
             raise Blocked('Select a specific existing folder without symlinks; no permissions were saved')
         result['folders'][capability] = str(path)
     return result
 
 
-def access_choices(response, now, form, *, previous, defaults, creatable):
-    """Save preferences only after real native acceptance of the access request."""
-    if not isinstance(response, dict) or response.get('action') != 'accept':
-        return None
-    value = response.get('content')
-    # Codex renders an empty schema as Allow/Deny and returns null content.
-    if value is None and not form['properties'] and not form['required']:
-        value = {}
-    if (not isinstance(value, dict) or set(value) != set(form['required'])
-            or ('host' in value and value['host'] not in ('cli', 'desktop'))):
-        raise Blocked('The native access response is incomplete; no permissions were saved')
+def review_changes(elicit, message, form, previous, managed):
     previous = previous or {}
-    # Defaults never renew a saved time limit or enable a previously disabled feature.
+    saved = previous.get('folders', {})
+    for capability in FOLDER_FIELDS:
+        options = {'default': 'Use Pantheon folder', 'off': 'Off', 'custom': 'Choose a folder'}
+        default = 'default' if previous.get(capability, True) else 'off'
+        folder = saved.get(capability)
+        if folder and folder != managed[capability]:
+            if not isinstance(folder, str):
+                raise Blocked('The saved setup folder is invalid')
+            options = {'saved': 'Keep current folder', **options}
+            form['properties'][capability]['description'] += '\nCurrent folder is ' + folder
+            if default == 'default':
+                default = 'saved'
+        form['properties'][capability].update(enum=list(options), enumNames=list(options.values()), default=default)
+    response = elicit(message, form)
+    value = accepted_fields(response, form)
+    if value is None:
+        return response, None
+
+    custom = {capability: field for capability, field in FOLDER_FIELDS.items() if value[capability] == 'custom'}
+    paths = {}
+    if custom:
+        fields = {field: {'type': 'string', 'title': form['properties'][capability]['title'] + ' folder',
+                          'minLength': 1} for capability, field in custom.items()}
+        folder_form = {'type': 'object', 'properties': fields, 'required': list(fields)}
+        response = elicit('Enter the absolute path to each selected folder. Each folder must already exist.',
+                          folder_form)
+        paths = accepted_fields(response, folder_form)
+        if paths is None:
+            return response, None
+
+    folders = {}
+    for capability, field in FOLDER_FIELDS.items():
+        mode = value[capability]
+        if mode == 'custom':
+            folders[capability] = paths[field]
+        elif mode == 'saved':
+            folders[capability] = saved[capability]
+        elif mode == 'default':
+            folders[capability] = managed[capability]
+    minutes = int(value['minutes'])
+    creatable = {capability: folder for capability, folder in managed.items() if capability not in custom}
+    return response, preferences(value, folders, creatable, end=time.time() + 60 * minutes if minutes else 0)
+
+
+def access_choices(response, now, form, *, previous, managed):
+    """Save preferences only after real native acceptance of the access request."""
+    value = accepted_fields(response, form)
+    if value is None:
+        return None
+    previous = previous or {}
     end = previous.get('expires_at', 0)
     if end and end <= now:
         raise Blocked('The saved time limit has expired. Use Change setup to choose a new limit.')
-    preferences = dict(minutes='0', transfers=previous.get('transfers', True),
-                       sites=previous.get('sites', True), **value)
-    # Reuse the folder/type validation, with a genuine accepted native response.
-    selected = choices({**response, 'content': preferences}, now,
-                       GUI_FORM if 'host' in value else FORM,
-                       defaults=defaults, creatable=creatable)
-    selected.update(expires_at=end, remember=previous.get('remember', True))
-    return selected
+    saved = previous.get('folders', {})
+    folders = {capability: saved.get(capability, managed[capability])
+               for capability in FOLDER_FIELDS if previous.get(capability, True)}
+    return preferences(value, folders, managed, end=end, remember=previous.get('remember', True))
 
 
 class Policy:
@@ -218,7 +245,6 @@ class Policy:
         # the real client's correlated acceptance response.
         message = ('Changing setup stops access to existing chats. ' if change else '') + MESSAGE
         managed = default_folders(self.home / 'pantheon')
-        defaults = dict(managed)
         previous = self.read()
         if not change and previous and previous.get('expires_at') and previous['expires_at'] <= time.time():
             raise Blocked('The saved time limit has expired. Use Change setup to choose a new limit.')
@@ -234,14 +260,9 @@ class Policy:
             form['properties']['minutes']['description'] += (
                 '\nMaximum deadline: ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(expires_at))
                 + ', including later invitations. An earlier selected limit still applies.')
-        for capability, field in (('transfers', 'transfer_folder'), ('sites', 'site_folder')):
-            if previous:
-                form['properties'][capability]['default'] = previous[capability]
-            folder = (previous or {}).get('folders', {}).get(capability, defaults[capability])
-            if change:
-                form['properties'][field]['default'] = folder
-            defaults[capability] = folder
-        if not change:
+        if change:
+            response, selected = review_changes(elicit, message, form, previous, managed)
+        else:
             form = {'type': 'object', 'properties': {
                 k: v for k, v in form['properties'].items() if k == 'host'},
                 'required': ['host'] if 'host' in form['properties'] else []}
@@ -250,18 +271,14 @@ class Policy:
             deadline = min(x for x in (expires_at, (previous or {}).get('expires_at'), float('inf')) if x)
             if math.isfinite(deadline):
                 message += '\nAccess ends by ' + time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(deadline)) + '.'
-        response = elicit(message, form)
-        selected = (choices(response, time.time(), form, defaults=defaults, creatable=managed.values())
-                    if change else access_choices(response, time.time(), form, previous=previous,
-                                                  defaults=defaults, creatable=managed.values()))
+            response = elicit(message, form)
+            selected = access_choices(response, time.time(), form, previous=previous, managed=managed)
         if selected is None:
             action = response.get('action') if isinstance(response, dict) else None
             if action == 'decline':
                 reason = 'native_form_declined'
             elif action == 'cancel':
                 reason = 'native_form_cancelled'
-            elif action == 'accept':
-                reason = 'collaboration_disabled'
             else:
                 reason = 'native_form_unanswered'
             return {'status': 'setup_declined', 'reason': reason,
