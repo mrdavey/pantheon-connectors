@@ -12,6 +12,7 @@ import stat
 import time
 import uuid
 from contextlib import contextmanager
+from datetime import datetime
 from .codex import AttachedAppServer
 from .onboarding import Onboarding, private_directory, trial_allowed
 from .state import load_private, save_private
@@ -20,6 +21,19 @@ from .worker import Blocked
 from .codex_delivery import selected, DEFAULT_DAEMON
 
 SURFACE = 'app-server-tool-output'
+TERMINAL_GRACE_SECONDS = 60
+
+
+class TerminalDeliveryEnded(Blocked):
+    """The bounded terminal drain ended. The watcher can retire its own grant."""
+
+
+def terminal_window_open(data, connection):
+    terminal = data.get('terminal', {}).get(connection)
+    if terminal is None:
+        return True
+    wake = data['notices'].get(terminal.get('wake_id'), {})
+    return time.time() < terminal['until'] and wake.get('state') != 'completed'
 
 
 @contextmanager
@@ -169,20 +183,81 @@ class OutputNotices:
             raise Blocked('Tool-output journal scope changed; preserve it')
         return data
 
-    def pending(self, connection):
+    def closure_allows(self, connection):
+        # Atomic journal reads also bound native tools when the watcher is offline.
+        data = self.read()
+        return connection not in data['withdrawn'] and terminal_window_open(data, connection)
+
+    def check_terminal(self, connection, data):
+        if not terminal_window_open(data, connection):
+            if connection not in data['withdrawn']:
+                data['withdrawn'].append(connection)
+                save_private(self.path, data)
+            raise TerminalDeliveryEnded('Terminal delivery completed or its deadline passed')
+        if connection in data['withdrawn']:
+            raise Blocked('Membership fenced for withdrawal')
+
+    def observe_chat(self, client, connection, data):
+        view = client.request('/v1/chat')
+        self.allowed()
+        self.opening_view = view
+        chat = view.get('chat', {})
+        member = chat.get('members', {}).get(view.get('member'), {})
+        if (view.get('role') != 'agent' or member.get('revoked') is not False
+                or member.get('binding') != self.binding):
+            raise Blocked('Connection revoked or rebound; no runtime delivery')
+        terminal = data.get('terminal', {}).get(connection)
+        if chat.get('state') != 'closed':
+            if chat.get('state') not in ('waiting', 'active') or terminal is not None:
+                raise Blocked('Connection no longer matches the approved chat state')
+            return
+        if terminal is None:
+            # Server closure time, never watcher startup or redelivery. Older
+            # records without a reliable end time cannot authorize a new turn.
+            try:
+                stamp = chat.get('ended')
+                if not stamp or stamp == '0001-01-01T00:00:00Z':
+                    stamp = view.get('timing', {}).get('ended_at')
+                ended = datetime.fromisoformat(stamp.replace('Z', '+00:00'))
+                if ended.tzinfo is None:
+                    raise ValueError('Missing closure timezone')
+                until = min(ended.timestamp(), time.time()) + TERMINAL_GRACE_SECONDS
+            except (AttributeError, KeyError, TypeError, ValueError, OverflowError, OSError):
+                until = 0
+            terminal = {'until': until}
+            for identity, notice in data['notices'].items():
+                if notice['connection'] == connection and notice['state'] != 'completed':
+                    terminal['wake_id'] = identity
+                    break
+            data.setdefault('terminal', {})[connection] = terminal
+            save_private(self.path, data)
+        self.check_terminal(connection, data)
+
+    def pending(self, connection, data=None):
+        if data is None:
+            # Receiver startup checks the same durable fence before daemon access.
+            with notice_lock(self.lock, self.allowed):
+                return self.pending(connection, self.read())
+        self.check_terminal(connection, data)
         _, _, client = self.service.member(connection, self.binding)
-        if self.config.get('runtime_policy') == {'mode':'connection'} or self.config.get('hosted_consent') is True:
-            view = client.request('/v1/chat')
-            self.opening_view = view
-            chat = view.get('chat', {})
-            member = chat.get('members', {}).get(view.get('member'), {})
-            if (self.config.get('runtime_policy') == {'mode':'connection'} and
-                    (chat.get('state') not in ('waiting', 'active') or member.get('revoked') is not False
-                     or member.get('binding') != self.binding)):
-                raise Blocked('Connection ended, revoked or rebound; no runtime delivery')
+        scoped = self.config.get('runtime_policy') == {'mode':'connection'} or self.config.get('hosted_consent') is True
+        if scoped:
+            self.observe_chat(client, connection, data)
         envelopes = client.request('/v1/pending')
         if any(e.get('protocol') != 'pyros.v1' or e.get('binding') != self.binding for e in envelopes):
             raise Blocked('Unread input changed membership binding or protocol')
+        if scoped and connection not in data.get('terminal', {}) and any(
+                e.get('brief', {}).get('state') == 'closed' for e in envelopes):
+            # Closure committed between the membership and inbox reads.
+            self.observe_chat(client, connection, data)
+        if connection in data.get('terminal', {}):
+            chat = self.opening_view['chat']
+            if not isinstance(chat.get('id'), str) or not chat['id'] or type(chat.get('epoch')) is not int:
+                raise Blocked('Closed chat has no verified ID or epoch')
+            envelopes = [e for e in envelopes if e['message'].get('kind') == 'terminal'
+                         and e['message'].get('epoch') == chat['epoch'] and e.get('chat') == chat['id']]
+        self.allowed()
+        self.check_terminal(connection, data)
         return [e['message']['id'] for e in envelopes]
 
     def fence_closed_idle(self, connection):
@@ -210,7 +285,7 @@ class OutputNotices:
                 raise Blocked('Closed room does not match the approved membership')
             # Closure can commit after tick's empty-inbox read. Its final
             # delivery must still drain before this local receiver is fenced.
-            if self.pending(connection):
+            if self.pending(connection, data) or connection in data.get('terminal', {}):
                 return False
             self.allowed()
             if connection not in data['withdrawn']:
@@ -228,13 +303,13 @@ class OutputNotices:
             self.allowed()
             data = self.read()
             approved_policy = notification_policy.policy(self.config, 'codex')
-            if connection in data['withdrawn']:
-                raise Blocked('Membership fenced for withdrawal')
-            pending = self.pending(connection)
+            pending = self.pending(connection, data)
             active = [(key,n) for key,n in data['notices'].items() if n['connection'] == connection and n['state'] != 'completed']
             if active:
                 identity, entry = active[0]
                 if entry['state'] in ('attempting', 'uncertain'):
+                    if connection in data.get('terminal', {}):
+                        return dict(status='delivery_uncertain', wake_id=identity)
                     raise Blocked('Uncertain output: no replay; native begin/finish can reconcile actual arrival')
                 entry['messages'] = list(dict.fromkeys(entry['messages'] + pending))
                 save_private(self.path, data)
@@ -250,14 +325,19 @@ class OutputNotices:
             before = self.owner.check()
             self.allowed()
             self.read()
-            pending = self.pending(connection)  # Revocation/consumption during preflight.
+            pending = self.pending(connection, data)  # Revocation/consumption during preflight.
             self.allowed()
             opening = self.opening_due(connection, data)
             if not set(pending)-seen and not opening:
                 return dict(status='idle')
             if notification_policy.policy(self.config, 'codex') != approved_policy:
                 raise Blocked('Notification policy changed during delivery preflight')
+            terminal = data.get('terminal', {}).get(connection)
+            if terminal is not None and 'wake_id' in terminal:
+                raise Blocked('Terminal notice already reserved; do not replay')
             identity = secrets.token_hex(16)
+            if terminal is not None:
+                terminal['wake_id'] = identity
             output = json.dumps(dict(connection=connection, wake_id=identity, has_unread=bool(pending),
                                      **({'reason': 'opening_deadline'} if opening else {})), sort_keys=True)
             entry = dict(connection=connection, messages=pending, state='attempting', attempted_at=time.time(),
@@ -270,10 +350,13 @@ class OutputNotices:
                 if self.audit:
                     self.audit.emit('delivery_attempt', thread=self.binding['session'], connection=connection,
                                     wake_id=identity, owner_state=before, notification_mode=approved_policy['mode'], notices_used=len(data['notices']))
+                self.check_terminal(connection, data)
                 response = self.owner.send(output)
                 turn_id = response['turn']['id']
                 if not isinstance(turn_id, str) or not turn_id:
                     raise ValueError('Missing native turn acceptance')
+            except TerminalDeliveryEnded:
+                raise
             except Exception as error:
                 entry['state'] = 'uncertain'
                 save_private(self.path, data)
@@ -281,6 +364,8 @@ class OutputNotices:
                     from .codex_audit import failure
                     self.audit.emit('delivery_uncertain', thread=self.binding['session'], connection=connection,
                                     wake_id=identity, **failure(error))
+                if terminal is not None:
+                    return dict(status='delivery_uncertain', wake_id=identity)
                 raise Blocked('Tool-output outcome uncertain; no retry or user-role fallback') from None
             entry.update(state='accepted', turn_id=turn_id, accepted_at=time.time())
             save_private(self.path, data)
@@ -302,7 +387,7 @@ class OutputNotices:
             entry = data['notices'].get(identity)
             if not entry or entry['connection'] != connection:
                 raise Blocked('Unknown tool-output wake')
-            pending = self.pending(connection)
+            pending = self.pending(connection, data)
             if finish and entry['state'] == 'completed':
                 return dict(status='completed', owns_turn=False)
             if finish and entry['state'] != 'draining':
@@ -318,27 +403,33 @@ class OutputNotices:
             else:
                 entry.update(state='draining', native_begin_at=time.time())
             save_private(self.path, data)
+            if finish and data.get('terminal', {}).get(connection, {}).get('wake_id') == identity:
+                return dict(status='completed', owns_turn=False, next_action='withdraw')
             return dict(status=entry['state'], owns_turn=False)
 
     def fenced_wake_status(self, connection, identity, *, native_thread=None, scope_check=lambda: None):
-        """Report an existing local fence without access, ACK or turn claims."""
+        """Report a locally recorded completion or fence without accessing the daemon."""
         if (native_thread if native_thread is not None else os.environ.get('CODEX_THREAD_ID')) != self.binding['session']:
             raise Blocked('Lifecycle call is outside the selected native thread')
         grant = self.config.get('hosted_runtime_grant')
         if (selected(self.config) != DEFAULT_DAEMON
                 or self.config.get('hosted_consent') is not True
                 or self.config.get('invitation_connection') != connection
-                or not isinstance(grant, dict) or grant.get('connection') != connection
-                or any(self.config.get(flag) is not False for flag in
-                       ('allow_runtime_turns', 'allow_daemon_access', 'allow_tool_output'))):
-            raise Blocked('No disabled hosted scope matches this wake')
+                or not isinstance(grant, dict) or grant.get('connection') != connection):
+            raise Blocked('No hosted scope matches this wake')
         with notice_lock(self.lock, scope_check):
             data = self.read()
             entry = data['notices'].get(identity)
-            if (connection not in data['withdrawn'] or not entry
-                    or entry['connection'] != connection):
+            if not entry or entry['connection'] != connection:
                 raise Blocked('No matching fenced tool-output wake')
             scope_check()
+            flags = [self.config.get(flag) for flag in ('allow_runtime_turns', 'allow_daemon_access', 'allow_tool_output')]
+            terminal = data.get('terminal', {}).get(connection, {})
+            if (all(flag is True for flag in flags) and terminal.get('wake_id') == identity
+                    and entry['state'] == 'completed'):
+                return dict(status='completed', owns_turn=False, next_action='withdraw')
+            if any(flag is not False for flag in flags) or connection not in data['withdrawn']:
+                raise Blocked('No disabled hosted scope matches this wake')
             return dict(status='connection_fenced', owns_turn=False, runtime_authorized=False,
                         daemon_inspected=False, acknowledgement_inferred=False,
                         native_turn_interrupted=False, next_action='stop_connection',

@@ -122,7 +122,9 @@ The native review reuses the known client and asks only for access approval.
 Select CLI or Desktop there only if the client is still unknown. It discloses
 incoming replies, existing provider usage, routine collaboration and the saved
 defaults: access lasts until the chat ends or the agent leaves, with file handoff and
-public publishing available in dedicated folders for authorized tasks. Do not ask
+public publishing available in dedicated folders for authorized tasks. The CLI
+may deliver one final notice within one minute of closure so the agent can
+report the outcome and withdraw. Any earlier time limit still applies. Do not ask
 the human to choose time limits, features, folders or whether to remember setup
 during initial approval. Change setup exposes those options; Revoke stops access.
 The tool receives the human's actual native form response; never supply or invent

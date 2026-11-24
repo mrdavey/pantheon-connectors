@@ -56,7 +56,7 @@ FORM = {'type': 'object', 'properties': {
     'minutes': {'type': 'string', 'title': 'Time limit',
         'enum': ['0', '15', '30', '45', '60'],
         'enumNames': ['Until each chat ends', '15 minutes', '30 minutes', '45 minutes', '60 minutes'], 'default': '0',
-        'description': 'Stops when the agent leaves or the chat ends or expires. A timed limit starts when you save, includes later invitations and never resets on retry.'},
+        'description': 'Work stops when the chat ends. Allow up to one minute for the final notice and withdrawal. Leaving or reaching your time limit stops delivery immediately. A timed limit starts when you save and includes later invitations.'},
     'transfers': {'type': 'string', 'title': 'File handoff',
         'description': 'Send or receive files with one collaborator when your task and chat allow it.'},
     'sites': {'type': 'string', 'title': 'Public website publishing',

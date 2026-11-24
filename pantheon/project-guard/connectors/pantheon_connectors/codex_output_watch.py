@@ -4,7 +4,7 @@ import json
 import signal
 import threading
 import time
-from .codex_output import OutputNotices, Owner
+from .codex_output import OutputNotices, Owner, TerminalDeliveryEnded
 from .codex_daemon import owner_for
 from .worker import Blocked
 from .client import APIError
@@ -44,14 +44,15 @@ def run(setup_file, connection, stop, report=None, audit=None):
                         and now >= next_idle_close_check):
                     next_idle_close_check = now + 5
                     if notices.fence_closed_idle(connection):
-                        from .native_cli import fence_hosted_runtime
-                        fenced = fence_hosted_runtime(setup_file, initial, connection)
-                        value = dict(status='closed', private_runtime_disabled=fenced)
-                        if report is not None:
-                            report(value)
-                        break
+                        raise TerminalDeliveryEnded('Closed membership drained')
                 scope.retry.reset()
                 delay = 1
+            except TerminalDeliveryEnded:
+                from .native_cli import fence_hosted_runtime
+                fenced = fence_hosted_runtime(setup_file, initial, connection)
+                if report is not None:
+                    report(dict(status='closed', private_runtime_disabled=fenced))
+                break
             except APIError as error:
                 value, delay = scope.recover_read(error)
             if report is None:

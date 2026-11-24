@@ -84,6 +84,9 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         if selected(current) == GUI_QUEUE:
             from .codex_queue import Notices
             return Notices(current).closure_allows(current.get('invitation_connection'))
+        if selected(current) == DEFAULT_DAEMON and current.get('invitation_connection'):
+            from .codex_output import OutputNotices
+            return OutputNotices(current).closure_allows(current['invitation_connection'])
         return True
     binding = binding_for(config, native_thread)
     def with_questions(value, connection, view=None):
@@ -107,10 +110,12 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
         from .codex_output import OutputNotices
         if not isinstance(args, dict) or set(args) != {'connection', 'wake_id'} or any(type(v) is not str for v in args.values()):
             raise Blocked('Expected connection and wake_id from the actual tool-output notice')
-        if name == 'pantheon_finish_wake' and not allowance():
-            return OutputNotices(config).fenced_wake_status(
-                args['connection'], args['wake_id'], native_thread=native_thread,
-                scope_check=current_scope)
+        if not allowance():
+            if name == 'pantheon_finish_wake':
+                return OutputNotices(config).fenced_wake_status(
+                    args['connection'], args['wake_id'], native_thread=native_thread,
+                    scope_check=current_scope)
+            raise Blocked('Runtime authorization ended before native wake preflight')
         preflight(config, binding)
         value = OutputNotices(config, unchanged=allowance).wake(args['connection'], args['wake_id'], finish=name == 'pantheon_finish_wake', native_thread=native_thread)
         return with_questions(value, args['connection']) if name == 'pantheon_begin_wake' else value
@@ -143,7 +148,7 @@ def execute(config, name, args, *, native_thread=None, setup_file=None):
     def doctor():
         current = current_scope()
         if (selected(current) == GUI_QUEUE and not allowance()) or (selected(current) == DEFAULT_DAEMON and (
-                not trial_allowed(current) or current.get('allow_daemon_access') is not True
+                not allowance() or current.get('allow_daemon_access') is not True
                 or current.get('allow_tool_output') is not True)):
             return dict(status='local_runtime_inactive', runtime_authorized=False,
                         daemon_inspected=False, runtime_verified=False,

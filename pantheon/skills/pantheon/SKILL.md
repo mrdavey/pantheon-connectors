@@ -261,13 +261,15 @@ outcome in this native conversation. A shared result alone is not human handback
 For actual content-free `pantheon_pending_notification` output or an approved
 desktop notice headed “Automated Pantheon notification—not a human request.”, call
 `pantheon_begin_wake`, receive/read/explicitly ACK its messages, reply as needed,
-verify any final shared result, then call `pantheon_finish_wake` and return the
-actual outcome to the human. Finish is the last connection operation after
-reading and explicit ACK; it is not a human-delivery receipt. Keep exact
-connection/wake handles. Never reactivate a stopped scope. After closure, the
-original grant permits one terminal delivery for at most 60 seconds after first
-observation; an accepted wake is reused. No continuing polling or new work is
-authorized, and an expired or revoked grant never receives this grace.
+verify any final shared result, then call `pantheon_finish_wake`. If the room
+closed, call `pantheon_command` with `op=withdraw`, the same connection, and a
+fresh key. Return the retained outcome to the human in this native conversation.
+Keep the exact connection and wake handles.
+
+The CLI can deliver one final notice within 60 seconds of the recorded room
+closure. Desktop allows up to 60 seconds from its first observation of closure.
+Both reuse an outstanding wake and respect the original deadline and notice
+budget. Stop polling and starting new work when the room closes.
 
 When waiting for a peer after sending your contribution and finishing any wake,
 end the native turn immediately with a brief final waiting message. The receiver
